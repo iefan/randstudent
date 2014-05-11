@@ -4,16 +4,25 @@ import random
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
 
+class MyThread(QThread):
+    trigger = pyqtSignal(int)
+  
+    def __init__(self, parent=None):
+        super(MyThread, self).__init__(parent)
+  
+    def setup(self, thread_no):
+        self.thread_no = thread_no
+  
+    def run(self):
+        time.sleep(random.random()*5)  # random sleep to imitate working
+        self.trigger.emit(self.thread_no)
+
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
         
         tabWidget=QTabWidget(self)
         w1=QWidget()
-
-        # self.menu = QMenu()
-        # self.menu.addAction('This is Action 1', self.Action1)
-        # self.menu.addAction('This is Action 2', self.Action2)
 
         w1title = QLabel("<font size='20'><b>随机抽取</b></font>")
         titleLayout = QHBoxLayout()
@@ -49,28 +58,16 @@ class QuestionDlg(QDialog):
                 # tmpbtn.setEnabled(False)
                 self.btngroup.addButton(tmpbtn, tmpnum)
                 btnlayout.addWidget(tmpbtn, i-1, j-1)
-
-        # print(self.btngroup.buttons()[0])
-
-        # allstudent = list(range(1, 45))
-        # self.choicestudent(allstudent, 4)
-        # self.btngroup.buttons()[5].setStyleSheet("background-color: red; color:white;")
-        line = QFrame()
-        line.setFrameStyle(QFrame.HLine|QFrame.Sunken)
+     
+        # line = QFrame()
+        # line.setFrameStyle(QFrame.HLine|QFrame.Sunken)
 
         self.btn_start = QPushButton("开始")
 
         tab1layout = QVBoxLayout()
-        tab1layout.addLayout(titleLayout)
-        # tab1layout.addSpacing(10)
-        # tab1layout.addStretch(1)
-        # tab1layout.addWidget(line)
-        # tab1layout.addSpacing(10)
-        # tab1layout.addStretch(1)
+        tab1layout.addLayout(titleLayout)       
         tab1layout.addLayout(btnlayout)
         tab1layout.addWidget(self.btn_start)
-        # tab1layout.setStretch(2, 1)
-        # tab1layout.setAlignment(self.btn_start,Qt.AlignCenter)
                 
         w1.setLayout(tab1layout)
         # firstUi.setupUi(w1)
@@ -85,16 +82,7 @@ class QuestionDlg(QDialog):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.testSleep)
-        
-        # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), self.buttonJudge)
-        # self.btngroup.buttonClicked[int].connect(self.buttonJudge)
-        # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), self.buttonJudge)
-
-        # buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
-
-        # self.connect(firstUi.childPushButton,SIGNAL("clicked()"),self.slotChild)
-        # self.connect(secondUi.closePushButton,SIGNAL("clicked()"),self,SLOT("reject()"))
-
+     
     def testSleep(self):        
         allstudent = list(range(1, 45))
 
