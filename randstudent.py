@@ -1,9 +1,11 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import random, time
+import random, time, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
+        
+conn = sqlite3.connect("student.db") 
 
 class MyThread(QThread):
     trigger = pyqtSignal(type([]), type(1))
@@ -23,7 +25,6 @@ class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
 
-        conn = sqlite3.connect("student.db") 
         
         tabWidget=QTabWidget(self)
         w1=QWidget()
@@ -84,6 +85,7 @@ class QuestionDlg(QDialog):
 
         self.lstchoices = []
         self.threadcounter = 0
+        # self.createDb()
 
 
         for i in list(range(0, 45)):
@@ -109,9 +111,21 @@ class QuestionDlg(QDialog):
 
         self.threadcounter += 1
         if self.threadcounter == 10:
+            cur = conn.cursor()
             print(self.lstchoices)
             for ibtn in self.lstchoices:
-                print(self.btngroup.buttons()[ibtn].text())
+                studentname = self.btngroup.buttons()[ibtn].text()
+                today = str(datetime.date.today())
+                print(today)
+                strsql = "insert into tmprecord values (Null, '3班', %s, %s)" % (studentname, today)
+                cur.execute(strsql)
+                conn.commit()
+                cur.execute("select * from tmprecord")
+                print(cur.fetchall())
+            
+            cur.close()
+                # print(self.btngroup.buttons()[ibtn].text())
+            self.threadcounter = 0
 
     def choiceOneStudent(self, curbtn, num=1): 
         otherstudent = list(range(0, 45))
@@ -147,15 +161,16 @@ class QuestionDlg(QDialog):
         sqlstr = 'create table student (id integer primary key, \
             classname varchar(20), \
             name varchar(10), \
-            allquestions int, \
-            rightquestions int, \
-            wrongquestions int)'
+            allquestions integer, \
+            rightquestions integer, \
+            wrongquestions integer)'
+        # print(sqlstr)
 
         sqlstr2 = 'create table tmprecord (id integer primary key, \
             classname varchar(20), \
             name varchar(10), \
-            datequestion datetime, \
-            )'
+            datequestion date)'
+        # print(sqlstr2)
 
         cur.execute(sqlstr) 
         conn.commit()
