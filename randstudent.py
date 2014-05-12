@@ -37,35 +37,37 @@ class QuestionDlg(QDialog):
        
         self.btngroup = QButtonGroup()
         btnlayout = QGridLayout()
+
+        cur = conn.cursor()
+        strsql = "select studentsn, studentname from student  where studentsn like '03%' "
+        cur.execute(strsql)
+        # print(cur.rowcount)
+        # for item in cur.fetchall():
+        #     print( item[0], item[1])
+        # print(cur.fetchall())
+
         tmpnum = 0
-        for i in list(range(1,10)):
-            btnlayout.setRowMinimumHeight(i-1, 60)
-            # btnlayout.setRowStretch(i-1, 10)
-            for j in list(range(1,6)):
-                # btnlayout.setColumnStretch(j-1, 1)
-                tmpnum += 1
-                tmpbtn = QPushButton(str(tmpnum))
-                # tmpbtn.setGeometry(QRect(0,0,50,50))
-                tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
-                # tmpbtn.resize(50,50)
+        for item in cur.fetchall():
+            irow = tmpnum // 7
+            icol = tmpnum % 7
+            tmpnum += 1
+            btnlayout.setRowMinimumHeight(irow, 60)
+            tmpbtn = QPushButton(item[1])
+            tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
 
-                popMenu = QMenu(self)
+            popMenu = QMenu(self)
+            entry1 = popMenu.addAction("正确")
+            self.connect(entry1,SIGNAL('triggered()'), lambda item=item[0]: self.answerRight(item))
+            entry2 = popMenu.addAction("错误")
+            self.connect(entry2,SIGNAL('triggered()'), lambda item=item[0]: self.answerWrong(item))
+            entry3 = popMenu.addAction("替换")
+            self.connect(entry3,SIGNAL('triggered()'), lambda item=item[0]: self.resetStudent(item))
+            tmpbtn.setMenu(popMenu)
+            tmpbtn.setAutoDefault(False)
+            self.btngroup.addButton(tmpbtn, int(item[0]))
+            btnlayout.addWidget(tmpbtn, irow, icol)
 
-                entry1 = popMenu.addAction("正确")
-                self.connect(entry1,SIGNAL('triggered()'), lambda item=tmpnum: self.answerRight(item))
-                entry2 = popMenu.addAction("错误")
-                self.connect(entry2,SIGNAL('triggered()'), lambda item=tmpnum: self.answerWrong(item))
-                entry3 = popMenu.addAction("替换")
-                self.connect(entry3,SIGNAL('triggered()'), lambda item=tmpnum: self.resetStudent(item))
-                tmpbtn.setMenu(popMenu)
-
-                tmpbtn.setAutoDefault(False)
-                # tmpbtn.setEnabled(False)
-                self.btngroup.addButton(tmpbtn, tmpnum)
-                btnlayout.addWidget(tmpbtn, i-1, j-1)
-     
-        # line = QFrame()
-        # line.setFrameStyle(QFrame.HLine|QFrame.Sunken)
+        
 
         self.btn_start = QPushButton("开始")
 
@@ -86,15 +88,31 @@ class QuestionDlg(QDialog):
         self.lstchoices = []
         self.threadcounter = 0
         # self.createDb()
+        today = datetime.date.today() 
+        cur.execute("delete from tmprecord where datequestion= '" +str(today) + "'") #delete tmp date no today
+        # cur.execute("delete from tmprecord where datequestion!= '" +str(today) + "'") #delete tmp date no today
+        conn.commit()
 
-
-        for i in list(range(0, 45)):
+        cur.execute("select count(*) from student where studentsn like '03%' ")
+        self.studentNums = cur.fetchall()[0][0]
+        cur.close()
+        for i in list(range(0, self.studentNums)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
      
-    def startChoice(self):        
-        allstudent = list(range(0, 45))
+    def startChoice(self):   
+        allstudent = []
+        cur = conn.cursor()   
+        cur.execute("select studentsn from tmprecord where studentsn like '03%'")  
+        lstrecord = []
+        for item in cur.fetchall():
+            lstrecord.append(item[0])
+        # print(lstrecord, 'record', "select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
+        cur.execute("select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
+        for item in cur.fetchall():
+            allstudent.append(item[0])
+
         nums = 4
         for i in range(10):
             thread = MyThread(self)
@@ -103,51 +121,74 @@ class QuestionDlg(QDialog):
             thread.start()
 
     def choicestudent(self, allstudent, num): 
-        for i in list(range(0, 45)):
+        for i in list(range(0, self.studentNums)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
-            self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
+            self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
+            # self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
 
         self.threadcounter += 1
         if self.threadcounter == 10:
             cur = conn.cursor()
-            print(self.lstchoices)
             for ibtn in self.lstchoices:
-                studentname = self.btngroup.buttons()[ibtn].text()
-                today = str(datetime.date.today())
-                print(today)
-                strsql = "insert into tmprecord values (Null, '3班', %s, %s)" % (studentname, today)
-                cur.execute(strsql)
+                today = datetime.date.today()
+                strsql = "insert into tmprecord values (?, ?, ?)" 
+                cur.execute(strsql, (None, ibtn, today))
                 conn.commit()
-                cur.execute("select * from tmprecord")
-                print(cur.fetchall())
+
+            cur.execute("select * from tmprecord")
+            print(cur.fetchall())
             
             cur.close()
                 # print(self.btngroup.buttons()[ibtn].text())
             self.threadcounter = 0
 
     def choiceOneStudent(self, curbtn, num=1): 
-        otherstudent = list(range(0, 45))
-        for i in self.lstchoices:
-            otherstudent.remove(i)
+        allstudent = []
+        cur = conn.cursor()   
+        cur.execute("select studentsn from tmprecord where studentsn like '03%'")  
+        lstrecord = []
+        for item in cur.fetchall():
+            lstrecord.append(item[0])
+        cur.execute("select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
+        for item in cur.fetchall():
+            allstudent.append(item[0])
+
+        # cur.execute("select * from tmprecord")
+        # print(cur.fetchall(), '111111111111111111')
+        otherbtn = random.sample(allstudent, num)[0]
+        self.btngroup.button(int(otherbtn)).setStyleSheet("background-color: red; color:white;")
+
+        # print(self.lstchoices, 'choice one another00000000000000001')
         self.lstchoices.remove(curbtn)
-        otherbtn = random.sample(otherstudent, num)[0]
-        self.btngroup.buttons()[otherbtn].setStyleSheet("background-color: red; color:white;")
         self.lstchoices.append(otherbtn)
+        # print(self.lstchoices, 'choice one another000000000000000002')
+
+        # cur.execute("delete from tmprecord where studentsn='" + curbtn + "'") # can not delete ,because this student is ill.
+        # conn.commit()
+        today = datetime.date.today()
+        cur.execute("insert into tmprecord values (?, ?, ?)", (None, otherbtn, today))
+        conn.commit()
+        # cur.execute("select * from tmprecord")
+        # print(cur.fetchall(), '2222222222222')
+
+        cur.close()
 
     def answerRight(self, value):
         print("right", value)
 
     def answerWrong(self, value):
+        btnid = int(value)
+        print(self.btngroup.button(btnid), self.btngroup.button(btnid).text())
         print("wrong",value)
 
     def resetStudent(self, value):
-        print(self.lstchoices, '111111111')
-        print("resetStudent",value-1)
-        self.btngroup.buttons()[value-1].setStyleSheet("background-color: rgb(120,220,220);")
-        self.choiceOneStudent(value-1)
-        print(self.lstchoices, '222222222')
+        # print(self.lstchoices, '111111111')
+        # print("resetStudent",value-1)
+        self.btngroup.button(int(value)).setStyleSheet("background-color: rgb(120,220,220);")
+        self.choiceOneStudent(value)
+        # print(self.lstchoices, '222222222')
      
     def selectDb(self):
         cur = conn.cursor()
@@ -159,16 +200,15 @@ class QuestionDlg(QDialog):
     def createDb(self):
         cur = conn.cursor()
         sqlstr = 'create table student (id integer primary key, \
-            classname varchar(20), \
-            name varchar(10), \
+            studentsn varchar(20), \
+            studentname varchar(20), \
             allquestions integer, \
             rightquestions integer, \
             wrongquestions integer)'
         # print(sqlstr)
 
         sqlstr2 = 'create table tmprecord (id integer primary key, \
-            classname varchar(20), \
-            name varchar(10), \
+            studentsn varchar(20), \
             datequestion date)'
         # print(sqlstr2)
 
@@ -176,6 +216,12 @@ class QuestionDlg(QDialog):
         conn.commit()
         cur.execute(sqlstr2) 
         conn.commit()
+
+        # insert example data
+        strsql = "insert into student values (?, ?, ?,?,?,?)" 
+        for i in list(range(0,45)):
+            cur.execute(strsql, (None, "03"+str(i+1).zfill(2), "张"+str(i+1), 0, 0, 0))
+            conn.commit()
         cur.close()
         
 if __name__ == "__main__":
