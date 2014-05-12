@@ -1,21 +1,22 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import random
+import random, time
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
 
 class MyThread(QThread):
-    trigger = pyqtSignal(int)
+    trigger = pyqtSignal(type([]), type(1))
   
     def __init__(self, parent=None):
         super(MyThread, self).__init__(parent)
   
-    def setup(self, thread_no):
-        self.thread_no = thread_no
-  
+    def setup(self, thread_allstudents, thread_nums):
+        self.thread_allstudents = thread_allstudents
+        self.thread_nums = thread_nums
+
     def run(self):
-        time.sleep(random.random()*5)  # random sleep to imitate working
-        self.trigger.emit(self.thread_no)
+        time.sleep(random.random()*1)  # random sleep to imitate working
+        self.trigger.emit(self.thread_allstudents, self.thread_nums)
 
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
@@ -78,23 +79,52 @@ class QuestionDlg(QDialog):
         tabWidget.addTab(w2,"统计结果")
         tabWidget.resize(600,600)
 
+        self.lstchoices = []
+
+
         for i in list(range(0, 45)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.testSleep)
      
     def testSleep(self):        
-        allstudent = list(range(1, 45))
+        allstudent = list(range(0, 45))
+        nums = 4
+        for i in range(10):
+            thread = MyThread(self)
+            thread.trigger.connect(self.choicestudent)
+            thread.setup(allstudent, nums)            # just setting up a parameter
+            thread.start()
+            # thread = MyThread(self)    # create a thread
+            # thread.trigger.connect(self.update_text)  # connect to it's signal
+            # thread.setup(i)            # just setting up a parameter
+            # thread.start()             # start the thread
 
-        QTimer.singleShot(1000, lambda: self.choicestudent(allstudent, 4))
+        # self.mythread.setup(allstudent, nums)            # just setting up a parameter
+        # self.mythread.start() 
+        # self.choicestudent(allstudent, nums)
 
-    def choicestudent(self, allstudent, num):       
+
+        # QTimer.singleShot(1000, lambda: self.stopthread())
+
+    # def stopthread(self):
+    #     self.mythread.quit()
+
+    def choicestudent(self, allstudent, num): 
         for i in list(range(0, 45)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
-
-        lstchoices = random.sample(allstudent, num)
-        for ibtn in lstchoices:
+        self.lstchoices = random.sample(allstudent, num)
+        for ibtn in self.lstchoices:
             self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
+
+    def choiceOneStudent(self, curbtn, num=1): 
+        otherstudent = list(range(0, 45))
+        for i in self.lstchoices:
+            otherstudent.remove(i)
+        self.lstchoices.remove(curbtn)
+        otherbtn = random.sample(otherstudent, num)[0]
+        self.btngroup.buttons()[otherbtn].setStyleSheet("background-color: red; color:white;")
+        self.lstchoices.append(otherbtn)
 
     def answerRight(self, value):
         print("right", value)
@@ -103,7 +133,11 @@ class QuestionDlg(QDialog):
         print("wrong",value)
 
     def resetStudent(self, value):
-        print("resetStudent",value)
+        print(self.lstchoices, '111111111')
+        print("resetStudent",value-1)
+        self.btngroup.buttons()[value-1].setStyleSheet("background-color: rgb(120,220,220);")
+        self.choiceOneStudent(value-1)
+        print(self.lstchoices, '222222222')
      
     def slotChild(self):
         dlg=QDialog()
