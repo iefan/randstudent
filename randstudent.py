@@ -1,6 +1,7 @@
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import random, time
+import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
 
@@ -21,6 +22,8 @@ class MyThread(QThread):
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
+
+        conn = sqlite3.connect("student.db") 
         
         tabWidget=QTabWidget(self)
         w1=QWidget()
@@ -80,14 +83,15 @@ class QuestionDlg(QDialog):
         tabWidget.resize(600,600)
 
         self.lstchoices = []
+        self.threadcounter = 0
 
 
         for i in list(range(0, 45)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
 
-        self.connect(self.btn_start, SIGNAL("clicked()"), self.testSleep)
+        self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
      
-    def testSleep(self):        
+    def startChoice(self):        
         allstudent = list(range(0, 45))
         nums = 4
         for i in range(10):
@@ -95,20 +99,6 @@ class QuestionDlg(QDialog):
             thread.trigger.connect(self.choicestudent)
             thread.setup(allstudent, nums)            # just setting up a parameter
             thread.start()
-            # thread = MyThread(self)    # create a thread
-            # thread.trigger.connect(self.update_text)  # connect to it's signal
-            # thread.setup(i)            # just setting up a parameter
-            # thread.start()             # start the thread
-
-        # self.mythread.setup(allstudent, nums)            # just setting up a parameter
-        # self.mythread.start() 
-        # self.choicestudent(allstudent, nums)
-
-
-        # QTimer.singleShot(1000, lambda: self.stopthread())
-
-    # def stopthread(self):
-    #     self.mythread.quit()
 
     def choicestudent(self, allstudent, num): 
         for i in list(range(0, 45)):
@@ -116,6 +106,12 @@ class QuestionDlg(QDialog):
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
             self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
+
+        self.threadcounter += 1
+        if self.threadcounter == 10:
+            print(self.lstchoices)
+            for ibtn in self.lstchoices:
+                print(self.btngroup.buttons()[ibtn].text())
 
     def choiceOneStudent(self, curbtn, num=1): 
         otherstudent = list(range(0, 45))
@@ -139,10 +135,33 @@ class QuestionDlg(QDialog):
         self.choiceOneStudent(value-1)
         print(self.lstchoices, '222222222')
      
-    def slotChild(self):
-        dlg=QDialog()
-        self.thirdUi.setupUi(dlg)
-        dlg.exec_()
+    def selectDb(self):
+        cur = conn.cursor()
+        strsql = "select * from student"
+        cur.execute(strsql)
+        print(cur.fetchall())
+        cur.close()
+
+    def createDb(self):
+        cur = conn.cursor()
+        sqlstr = 'create table student (id integer primary key, \
+            classname varchar(20), \
+            name varchar(10), \
+            allquestions int, \
+            rightquestions int, \
+            wrongquestions int)'
+
+        sqlstr2 = 'create table tmprecord (id integer primary key, \
+            classname varchar(20), \
+            name varchar(10), \
+            datequestion datetime, \
+            )'
+
+        cur.execute(sqlstr) 
+        conn.commit()
+        cur.execute(sqlstr2) 
+        conn.commit()
+        cur.close()
         
 if __name__ == "__main__":
     import sys
