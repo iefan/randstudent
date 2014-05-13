@@ -51,7 +51,7 @@ class QuestionDlg(QDialog):
             irow = tmpnum // 7
             icol = tmpnum % 7
             tmpnum += 1
-            btnlayout.setRowMinimumHeight(irow, 60)
+            btnlayout.setRowMinimumHeight(irow, 80)
             tmpbtn = QPushButton(item[1])
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
 
@@ -67,9 +67,11 @@ class QuestionDlg(QDialog):
             self.btngroup.addButton(tmpbtn, int(item[0]))
             btnlayout.addWidget(tmpbtn, irow, icol)
 
-        
 
         self.btn_start = QPushButton("开始")
+        # self.btn_start = QPushButton()
+        # self.btn_start.setIcon(QIcon("image/smile.png"))
+        # self.btn_start.setIconSize(QSize(40,40))
         self.btn_start.setFixedHeight(40)
         self.btn_start.setFixedWidth(100)
         self.btn_start.setFont(QFont('宋体', 20))
@@ -107,7 +109,7 @@ class QuestionDlg(QDialog):
 
         tabWidget.addTab(w1,"随机抽取")
         tabWidget.addTab(w2,"统计结果")
-        tabWidget.resize(600,600)
+        tabWidget.resize(800,800)
 
         self.lstchoices = []
         self.threadcounter = 0
@@ -159,6 +161,7 @@ class QuestionDlg(QDialog):
     def choicestudent(self, allstudent, num): 
         for i in list(range(0, self.studentNums)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
+            self.btngroup.buttons()[i].setIcon(QIcon())
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
             self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
@@ -214,6 +217,9 @@ class QuestionDlg(QDialog):
     def answerRight(self, value):
         if value not in self.lstchoices:
             return
+
+        self.btngroup.button(int(value)).setIcon(QIcon("image/smile.png"))
+        self.btngroup.button(int(value)).setIconSize(QSize(30,30))
         
         cur = conn.cursor()
         cur.execute("select rightquestions from student where studentsn='" + value + "'")
@@ -222,11 +228,16 @@ class QuestionDlg(QDialog):
         conn.commit()
         # cur.execute("select rightquestions from student where studentsn='" + value + "'")
         # print(cur.fetchall(), 'aaaaaaaaaa')
+        self.btngroup.button(int(value)).setEnabled(False)
         cur.close()
 
     def answerWrong(self, value):
         if value not in self.lstchoices:
             return
+
+        self.btngroup.button(int(value)).setIcon(QIcon("image/cry.png"))
+        # self.btngroup.button(int(value)).setIcon(QIcon())
+        self.btngroup.button(int(value)).setIconSize(QSize(30,30))
 
         cur = conn.cursor()
         cur.execute("select wrongquestions from student where studentsn='" + value + "'")
@@ -247,6 +258,7 @@ class QuestionDlg(QDialog):
         # print(self.lstchoices, '111111111')
         # print("resetStudent",value-1)
         self.btngroup.button(int(value)).setStyleSheet("background-color: rgb(120,220,220);")
+        self.btngroup.button(int(value)).setIcon(QIcon())
         self.choiceOneStudent(value)
         # print(self.lstchoices, '222222222')
      
