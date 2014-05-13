@@ -88,6 +88,7 @@ class QuestionDlg(QDialog):
             font.setPointSize(20)
             item.setFont(font)
             model.appendRow(item)
+        self.choicenum_text.setCurrentIndex(2)
 
         bottomlayout = QHBoxLayout()
         bottomlayout.setSizeConstraint(QLayout.SetFixedSize)
@@ -96,20 +97,21 @@ class QuestionDlg(QDialog):
         bottomlayout.addStretch(1)
         bottomlayout.addWidget(self.choicenum_text)
 
-
         tab1layout = QVBoxLayout()
         tab1layout.addLayout(titleLayout)       
         tab1layout.addLayout(btnlayout)
         tab1layout.addLayout(bottomlayout)
                 
         w1.setLayout(tab1layout)
+        w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
+        # w1.setStyleSheet("border-image: url(image/bg.jpg);")
         # firstUi.setupUi(w1)
         w2=QWidget()
         # secondUi.setupUi(w2)
 
         tabWidget.addTab(w1,"随机抽取")
         tabWidget.addTab(w2,"统计结果")
-        tabWidget.resize(800,800)
+        tabWidget.resize(700,700)
 
         self.lstchoices = []
         self.threadcounter = 0
@@ -125,12 +127,24 @@ class QuestionDlg(QDialog):
 
         # self.btncolor = self.btngroup.buttons()[0].palette().color(1).getRgb()
         for i in list(range(0, self.studentNums)):
-            self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
+            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
+            self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+            # self.btngroup.buttons()[i].setStyleSheet("background-image: url(image/ex_stu.png);background-size:20px 20px;")
+
         # print("background-color: rgb(120,220,220);", "background-color: rgb" + str(self.btncolor) + ";")
+        self.setWindowTitle("课堂随机提问")
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
      
-    def startChoice(self):   
+    def startChoice(self): 
+        for i in list(range(0, self.studentNums)):
+            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
+            self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+            self.btngroup.buttons()[i].setIcon(QIcon())
+            curmenu = self.btngroup.buttons()[i].menu()
+            curmenu.actions()[0].setEnabled(True)
+            curmenu.actions()[1].setEnabled(True)
+
         allstudent = []
         cur = conn.cursor()   
         cur.execute("select studentsn from tmprecord where studentsn like '03%'")  
@@ -160,11 +174,12 @@ class QuestionDlg(QDialog):
 
     def choicestudent(self, allstudent, num): 
         for i in list(range(0, self.studentNums)):
-            self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
-            self.btngroup.buttons()[i].setIcon(QIcon())
+            self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
-            self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
+            self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
+            # self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
             # self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
 
         self.threadcounter += 1
@@ -176,8 +191,8 @@ class QuestionDlg(QDialog):
                 cur.execute(strsql, (None, ibtn, today))
                 conn.commit()
 
-            cur.execute("select * from tmprecord")
-            print(cur.fetchall())
+            # cur.execute("select * from tmprecord")
+            # print(cur.fetchall())
             
             cur.close()
                 # print(self.btngroup.buttons()[ibtn].text())
@@ -220,15 +235,26 @@ class QuestionDlg(QDialog):
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/smile.png"))
         self.btngroup.button(int(value)).setIconSize(QSize(30,30))
-        
+
         cur = conn.cursor()
         cur.execute("select rightquestions from student where studentsn='" + value + "'")
         studentRightQuestions = cur.fetchall()[0][0] + 1
         cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
         conn.commit()
-        # cur.execute("select rightquestions from student where studentsn='" + value + "'")
-        # print(cur.fetchall(), 'aaaaaaaaaa')
-        self.btngroup.button(int(value)).setEnabled(False)
+        
+        curmenu = self.btngroup.button(int(value)).menu()
+        if not curmenu.actions()[1].isEnabled (): # must delete wrongquestionnums
+            cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+            studentWrongQuestions = cur.fetchall()[0][0] - 1
+            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+            conn.commit()
+        curmenu.actions()[0].setEnabled(False)
+        curmenu.actions()[1].setEnabled(True)
+        # curmenu.actions()[2].setEnabled(False)
+        
+        # cur.execute("select * from student where studentsn='" + value + "'")
+        # print(cur.fetchall(), 'right-------')
+
         cur.close()
 
     def answerWrong(self, value):
@@ -236,7 +262,6 @@ class QuestionDlg(QDialog):
             return
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/cry.png"))
-        # self.btngroup.button(int(value)).setIcon(QIcon())
         self.btngroup.button(int(value)).setIconSize(QSize(30,30))
 
         cur = conn.cursor()
@@ -245,30 +270,50 @@ class QuestionDlg(QDialog):
         cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
         conn.commit()
 
-        # cur.execute("select wrongquestions from student where studentsn='" + value + "'")
-        # print(cur.fetchall(), 'aaaaaaaaaa')
-        # btnid = int(value)
-        # print(self.btngroup.button(btnid), self.btngroup.button(btnid).text())
-        # print("wrong",value)
+        curmenu = self.btngroup.button(int(value)).menu()
+        if not curmenu.actions()[0].isEnabled (): # must delete wrongquestionnums
+            cur.execute("select rightquestions from student where studentsn='" + value + "'")
+            studentRightQuestions = cur.fetchall()[0][0] - 1
+            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+            conn.commit()
+        curmenu.actions()[0].setEnabled(True)
+        curmenu.actions()[1].setEnabled(False)
+
+        # cur.execute("select * from student where studentsn='" + value + "'")
+        # print(cur.fetchall(), 'wrong--')
+
         cur.close()
 
     def resetStudent(self, value):
         if value not in self.lstchoices:
             return
-        # print(self.lstchoices, '111111111')
-        # print("resetStudent",value-1)
+
         self.btngroup.button(int(value)).setStyleSheet("background-color: rgb(120,220,220);")
         self.btngroup.button(int(value)).setIcon(QIcon())
-        self.choiceOneStudent(value)
-        # print(self.lstchoices, '222222222')
-     
-    # def selectDb(self):
-    #     cur = conn.cursor()
-    #     strsql = "select * from student"
-    #     cur.execute(strsql)
-    #     print(cur.fetchall())
-    #     cur.close()
 
+        cur = conn.cursor()
+
+        curmenu = self.btngroup.button(int(value)).menu()
+        if not curmenu.actions()[0].isEnabled():
+            cur.execute("select rightquestions from student where studentsn='" + value + "'")
+            studentRightQuestions = cur.fetchall()[0][0] - 1
+            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+            conn.commit()
+        if not curmenu.actions()[1].isEnabled():
+            cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+            studentWrongQuestions = cur.fetchall()[0][0] - 1
+            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+            conn.commit()
+
+        curmenu.actions()[0].setEnabled(True)
+        curmenu.actions()[1].setEnabled(True)
+        self.choiceOneStudent(value)
+
+        # cur.execute("select * from student where studentsn='" + value + "'")
+        # print(cur.fetchall(), 'reset--')
+
+        cur.close()
+    
     def createDb(self):
         cur = conn.cursor()
         sqlstr = 'create table student (id integer primary key, \
