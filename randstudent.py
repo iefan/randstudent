@@ -70,11 +70,35 @@ class QuestionDlg(QDialog):
         
 
         self.btn_start = QPushButton("开始")
+        self.btn_start.setFixedHeight(40)
+        self.btn_start.setFixedWidth(100)
+        self.btn_start.setFont(QFont('宋体', 20))
+        self.choicenum_text = QComboBox()
+        self.choicenum_text.setFixedHeight(40)
+        self.choicenum_text.setFixedWidth(60)
+        self.choicenum_text.setFont(QFont('Courier New', 20))
+        # self.choicenum_text.addItems(["1", "2", "3", "4", "5", "6"])
+        model = self.choicenum_text.model()
+        for row in list(range(1, 7)):
+            item = QStandardItem(str(row))
+            item.setForeground(QColor('red'))
+            font = item.font()
+            font.setPointSize(20)
+            item.setFont(font)
+            model.appendRow(item)
+
+        bottomlayout = QHBoxLayout()
+        bottomlayout.setSizeConstraint(QLayout.SetFixedSize)
+        bottomlayout.addStretch(10)
+        bottomlayout.addWidget(self.btn_start)
+        bottomlayout.addStretch(1)
+        bottomlayout.addWidget(self.choicenum_text)
+
 
         tab1layout = QVBoxLayout()
         tab1layout.addLayout(titleLayout)       
         tab1layout.addLayout(btnlayout)
-        tab1layout.addWidget(self.btn_start)
+        tab1layout.addLayout(bottomlayout)
                 
         w1.setLayout(tab1layout)
         # firstUi.setupUi(w1)
@@ -96,8 +120,11 @@ class QuestionDlg(QDialog):
         cur.execute("select count(*) from student where studentsn like '03%' ")
         self.studentNums = cur.fetchall()[0][0]
         cur.close()
+
+        # self.btncolor = self.btngroup.buttons()[0].palette().color(1).getRgb()
         for i in list(range(0, self.studentNums)):
             self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
+        # print("background-color: rgb(120,220,220);", "background-color: rgb" + str(self.btncolor) + ";")
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
      
@@ -105,7 +132,7 @@ class QuestionDlg(QDialog):
         allstudent = []
         cur = conn.cursor()   
         cur.execute("select studentsn from tmprecord where studentsn like '03%'")  
-        lstrecord = []
+        lstrecord = ['0000', '1111']
         for item in cur.fetchall():
             lstrecord.append(item[0])
         # print(lstrecord, 'record', "select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
@@ -113,7 +140,16 @@ class QuestionDlg(QDialog):
         for item in cur.fetchall():
             allstudent.append(item[0])
 
-        nums = 4
+        nums = int(self.choicenum_text.currentText())
+        if nums >= len(allstudent):
+            cur.execute("delete from tmprecord where datequestion like '%%' ") #delete tmp date no today
+            conn.commit()
+            allstudent = []
+            cur.execute("select studentsn from student where studentsn like '03%' ")
+            for item in cur.fetchall():
+                allstudent.append(item[0])
+        # print(self.choicenum_text.currentText())
+        cur.close()
         for i in range(10):
             thread = MyThread(self)
             thread.trigger.connect(self.choicestudent)
@@ -148,7 +184,7 @@ class QuestionDlg(QDialog):
         allstudent = []
         cur = conn.cursor()   
         cur.execute("select studentsn from tmprecord where studentsn like '03%'")  
-        lstrecord = []
+        lstrecord = ['0000', '1111']
         for item in cur.fetchall():
             lstrecord.append(item[0])
         cur.execute("select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
@@ -176,33 +212,56 @@ class QuestionDlg(QDialog):
         cur.close()
 
     def answerRight(self, value):
-        print("right", value)
+        if value not in self.lstchoices:
+            return
+        
+        cur = conn.cursor()
+        cur.execute("select rightquestions from student where studentsn='" + value + "'")
+        studentRightQuestions = cur.fetchall()[0][0] + 1
+        cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+        conn.commit()
+        # cur.execute("select rightquestions from student where studentsn='" + value + "'")
+        # print(cur.fetchall(), 'aaaaaaaaaa')
+        cur.close()
 
     def answerWrong(self, value):
-        btnid = int(value)
-        print(self.btngroup.button(btnid), self.btngroup.button(btnid).text())
-        print("wrong",value)
+        if value not in self.lstchoices:
+            return
+
+        cur = conn.cursor()
+        cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+        studentWrongQuestions = cur.fetchall()[0][0] + 1
+        cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+        conn.commit()
+
+        # cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+        # print(cur.fetchall(), 'aaaaaaaaaa')
+        # btnid = int(value)
+        # print(self.btngroup.button(btnid), self.btngroup.button(btnid).text())
+        # print("wrong",value)
+        cur.close()
 
     def resetStudent(self, value):
+        if value not in self.lstchoices:
+            return
         # print(self.lstchoices, '111111111')
         # print("resetStudent",value-1)
         self.btngroup.button(int(value)).setStyleSheet("background-color: rgb(120,220,220);")
         self.choiceOneStudent(value)
         # print(self.lstchoices, '222222222')
      
-    def selectDb(self):
-        cur = conn.cursor()
-        strsql = "select * from student"
-        cur.execute(strsql)
-        print(cur.fetchall())
-        cur.close()
+    # def selectDb(self):
+    #     cur = conn.cursor()
+    #     strsql = "select * from student"
+    #     cur.execute(strsql)
+    #     print(cur.fetchall())
+    #     cur.close()
 
     def createDb(self):
         cur = conn.cursor()
         sqlstr = 'create table student (id integer primary key, \
             studentsn varchar(20), \
             studentname varchar(20), \
-            allquestions integer, \
             rightquestions integer, \
             wrongquestions integer)'
         # print(sqlstr)
@@ -218,9 +277,9 @@ class QuestionDlg(QDialog):
         conn.commit()
 
         # insert example data
-        strsql = "insert into student values (?, ?, ?,?,?,?)" 
+        strsql = "insert into student values (?, ?, ?,?,?)" 
         for i in list(range(0,45)):
-            cur.execute(strsql, (None, "03"+str(i+1).zfill(2), "张"+str(i+1), 0, 0, 0))
+            cur.execute(strsql, (None, "03"+str(i+1).zfill(2), "张"+str(i+1), 0, 0))
             conn.commit()
         cur.close()
         
