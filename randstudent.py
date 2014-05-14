@@ -24,8 +24,16 @@ class MyThread(QThread):
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
+        self.setStyleSheet("background-image:url('image/panelbg.jpg');")
+        self.setWindowFlags(Qt.FramelessWindowHint)
         
         tabWidget=QTabWidget(self)
+        # tabWidget.setTabShape(QTabWidget.Triangular)
+        tabWidget.setStyleSheet("QTabWidget::pane{border:0px;}\
+            QTabBar::tab { height: 40px; width: 200px; color:rgb(0, 0, 255); font-size:14px; font-weight:bold;} \
+            QTabBar::tab:hover{background:rgb(255,255, 255, 100);} \
+            QTabBar::tab:selected{border-color:white;background:white;color:green;}")
+        # tabWidget.setStyleSheet("QTabBar::tab:hover{background:rgb(255,255, 255, 100);}")
         self.btngroup = QButtonGroup()
 
         w1=QWidget()
@@ -34,6 +42,7 @@ class QuestionDlg(QDialog):
         self.btn_start = QPushButton("开始")
         self.choicenum_text = QComboBox()
         self.choicenum_text.setObjectName('w1combonums')
+        # self.w1title.setStyleSheet("background-image:url('image/panelbg.jpg');")
 
         titleLayout, btnlayout, bottomlayout = self.genOneTab(tabtitle = self.w1title, tabbtn=self.btn_start, tabnums=self.choicenum_text)
 
@@ -63,7 +72,7 @@ class QuestionDlg(QDialog):
 
         tabWidget.addTab(w1,"三（3）班—板演|提问")
         tabWidget.addTab(w2,"三（4）班—板演|提问")
-        tabWidget.resize(700,700)
+        tabWidget.resize(760,700)
 
 
         self.lstchoices = []
@@ -92,6 +101,7 @@ class QuestionDlg(QDialog):
         # print("background-color: rgb(120,220,220);", "background-color: rgb" + str(self.btncolor) + ";")
         self.setWindowTitle("课堂随机提问")
         self.setWindowIcon(QIcon("image/start.ico"))
+        self.setGeometry(100, 20, 760, 700)
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
@@ -147,9 +157,14 @@ class QuestionDlg(QDialog):
 
 
         # self.btn_start = QPushButton()
+        btnclose = QPushButton("退出")
+        btnclose.setStyleSheet("background-color: rgb(0,0,255);")
+        btnclose.setFixedHeight(40)
+        btnclose.setFixedWidth(60)
+        btnclose.setFont(QFont('黑体', 16))
+
         tabbtn.setIcon(QIcon("image/start.png"))
         tabbtn.setStyleSheet("background-color: rgb(0,0,0);")
-        # tabbtn.setIconSize(QSize(40,40))
         tabbtn.setFixedHeight(40)
         tabbtn.setFixedWidth(100)
         tabbtn.setFont(QFont('黑体', 20))
@@ -167,12 +182,15 @@ class QuestionDlg(QDialog):
             model.appendRow(item)
         tabnums.setCurrentIndex(2)
 
+
         bottomlayout = QHBoxLayout()
         bottomlayout.setSizeConstraint(QLayout.SetFixedSize)
         bottomlayout.addStretch(10)
         bottomlayout.addWidget(tabbtn)
         bottomlayout.addStretch(1)
         bottomlayout.addWidget(tabnums)
+        bottomlayout.addWidget(btnclose)
+        btnclose.clicked.connect(self.close)
         cur.close()
 
         return(titleLayout, btnlayout, bottomlayout)
