@@ -1,5 +1,6 @@
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
+from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy
+from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize
 import random, time, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
@@ -18,14 +19,16 @@ class MyThread(QThread):
         self.thread_nums = thread_nums
 
     def run(self):
-        time.sleep(random.random()*1)  # random sleep to imitate working
+        time.sleep(random.random()*0.8)  # random sleep to imitate working
         self.trigger.emit(self.thread_allstudents, self.thread_nums)
 
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
-        self.setStyleSheet("background-image:url('image/panelbg.jpg');")
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setStyleSheet("background-image:url('image/panelbg.jpg'); border: 2px; border-radius 2px;")
+        self.setWindowFlags(Qt.CustomizeWindowHint)
+        # self.setStyleSheet("border: 2px; border-radius 2px;")
+        # self.setWindowFlags(Qt.FramelessWindowHint)
         
         tabWidget=QTabWidget(self)
         # tabWidget.setTabShape(QTabWidget.Triangular)
@@ -70,10 +73,20 @@ class QuestionDlg(QDialog):
         w2.setLayout(tab2layout)
         w2.setStyleSheet("background-image: url(image/bg.gif);")
 
-        tabWidget.addTab(w1,"三（3）班—板演|提问")
-        tabWidget.addTab(w2,"三（4）班—板演|提问")
+        tabWidget.addTab(w1,"三（3）班~~板演|提问")
+        tabWidget.addTab(w2,"三（4）班~~板演|提问")
         tabWidget.resize(760,700)
-
+        # print(tabWidget.parentWidget())
+        btnclose = QPushButton(self)
+        btnclose.setText("X")
+        btnclose.setGeometry(735, 5, 20, 20)
+        btnclose.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
+        btnclose.clicked.connect(self.close)
+        btnMinimized = QPushButton(self)
+        btnMinimized.setText("_")
+        btnMinimized.setGeometry(710, 5, 20, 20)
+        btnMinimized.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
+        btnMinimized.clicked.connect(lambda: self.showMinimized())
 
         self.lstchoices = []
         self.threadcounter = 0
@@ -108,11 +121,24 @@ class QuestionDlg(QDialog):
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
 
+    def mousePressEvent(self, event):
+        self.offset = event.pos()
+        # print(self.offset)
+    def mouseMoveEvent(self, event):
+        x=event.globalX()
+        y=event.globalY()
+        x_w = self.offset.x()
+        y_w = self.offset.y()
+        self.move(x-x_w, y-y_w)
 
     def genOneTab(self, tabtitle="", tabbtn="", tabnums="", strwhere = "where studentsn like '03%' "):
-        tabtitle.setFixedHeight(40)
-        tabtitle.setFixedWidth(160)
+        # tabtitle.setFixedHeight(40)
+        # tabtitle.setFixedWidth(160)
         tabtitle.setFont(QFont('Courier New', 20))
+        tabtitle.setStyleSheet("border: 3px solid blue;\
+            border-radius: 6px; \
+            padding: 1px 18px 1px 20px;\
+            min-width: 8em;")
         model = tabtitle.model()
         for row in ["随堂板演", "随堂提问"]:
             item = QStandardItem(str(row))
@@ -155,49 +181,54 @@ class QuestionDlg(QDialog):
             self.btngroup.addButton(tmpbtn, int(item[0]))
             btnlayout.addWidget(tmpbtn, irow, icol)
 
-
-        # self.btn_start = QPushButton()
-        btnclose = QPushButton("退出")
-        btnclose.setStyleSheet("background-color: rgb(0,0,255);")
-        btnclose.setFixedHeight(40)
-        btnclose.setFixedWidth(60)
-        btnclose.setFont(QFont('黑体', 16))
-
         tabbtn.setIcon(QIcon("image/start.png"))
-        tabbtn.setStyleSheet("background-color: rgb(0,0,0);")
-        tabbtn.setFixedHeight(40)
+        tabbtn.setStyleSheet("border: 5px solid green;")
+        tabbtn.setFixedHeight(45)
         tabbtn.setFixedWidth(100)
         tabbtn.setFont(QFont('黑体', 20))
-        tabnums.setFixedHeight(40)
-        tabnums.setFixedWidth(60)
+        # tabnums.setFixedHeight(40)
+        # tabnums.setFixedWidth(60)
         tabnums.setFont(QFont('Courier New', 20))
+        tabnums.setStyleSheet("border: 5px solid blue; color:red;font-weight:bold;font-size:26px;\
+            border-radius: 6px; \
+            padding: 1px 1px 1px 1px;\
+            min-width: 2em; ")
+        # tabnums.VerticalContentAlignment="Center"
         # tabnums.addItems(["1", "2", "3", "4", "5", "6"])
         model = tabnums.model()
         for row in list(range(1, 7)):
             item = QStandardItem(str(row))
+            # item.setStyleSheet("background-color:rgb(0,0,255)")
             item.setForeground(QColor('red'))
-            font = item.font()
-            font.setPointSize(20)
-            item.setFont(font)
+            item.setBackground(QColor(0,200,50, 130))
+            # font = item.font()
+            # font.setPointSize(16)
+            # item.setFont(font)
             model.appendRow(item)
         tabnums.setCurrentIndex(2)
-
 
         bottomlayout = QHBoxLayout()
         bottomlayout.setSizeConstraint(QLayout.SetFixedSize)
         bottomlayout.addStretch(10)
         bottomlayout.addWidget(tabbtn)
-        bottomlayout.addStretch(1)
+        bottomlayout.setSpacing(5)
         bottomlayout.addWidget(tabnums)
-        bottomlayout.addWidget(btnclose)
-        btnclose.clicked.connect(self.close)
+     
         cur.close()
-
         return(titleLayout, btnlayout, bottomlayout)
 
     def changeTitle(self, curindex):
         # whichtabpage = self.sender().parentWidget().parentWidget().parentWidget()
         # print(whichtabpage.tabText(0), whichtabpage1)
+        for isn in self.studentSnlst:
+            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+            self.btngroup.button(int(isn[0])).setIcon(QIcon())
+            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
+            # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+            curmenu = self.btngroup.button(int(isn[0])).menu()
+            curmenu.actions()[0].setEnabled(True)
+            curmenu.actions()[1].setEnabled(True)
+
         whichtabpage = self.sender().parentWidget().accessibleName()
         if whichtabpage == "w1tab":
             if curindex == 1:
