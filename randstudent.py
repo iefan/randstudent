@@ -25,7 +25,7 @@ class MyThread(QThread):
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
         super(QuestionDlg,self).__init__(parent)
-        self.setStyleSheet("background-image:url('image/panelbg.jpg'); border: 2px; border-radius 2px;")
+        # self.setStyleSheet("background-image:url('image/panelbg.jpg'); border: 2px; border-radius 2px;")
         self.setWindowFlags(Qt.CustomizeWindowHint)
         # self.setStyleSheet("border: 2px; border-radius 2px;")
         # self.setWindowFlags(Qt.FramelessWindowHint)
@@ -34,7 +34,7 @@ class QuestionDlg(QDialog):
         tabWidget.currentChanged.connect(self.changeTab)
         # tabWidget.setTabShape(QTabWidget.Triangular)
         tabWidget.setStyleSheet("QTabWidget::pane{border:0px;}\
-            QTabBar::tab { height: 40px; width: 200px; color:rgb(0, 0, 255); font-size:14px; font-weight:bold;} \
+            QTabBar::tab { height: 60px; width: 260px; color:rgb(0, 0, 255); font-size:20px; font-weight:bold;} \
             QTabBar::tab:hover{background:rgb(255,255, 255, 100);} \
             QTabBar::tab:selected{border-color:white;background:white;color:green;}")
         # tabWidget.setStyleSheet("QTabBar::tab:hover{background:rgb(255,255, 255, 100);}")
@@ -56,9 +56,9 @@ class QuestionDlg(QDialog):
         tab1layout.addLayout(bottomlayout)
                 
         w1.setLayout(tab1layout)
-        # w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
+        # w1.setStyleSheet("background-image: url(image/bg.gif);")
+        w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
         # w1.setStyleSheet("border-image: url(image/bg2.gif);")
-        w1.setStyleSheet("background-image: url(image/bg.gif);")
         # firstUi.setupUi(w1)
         w2=QWidget()
         w2.setAccessibleName("w2tab")
@@ -72,21 +72,22 @@ class QuestionDlg(QDialog):
         tab2layout.addLayout(btnlayout2)
         tab2layout.addLayout(bottomlayout2)
         w2.setLayout(tab2layout)
-        w2.setStyleSheet("background-image: url(image/bg.gif);")
+        # w2.setStyleSheet("background-image: url(image/bg.gif);")
+        w2.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
 
-        tabWidget.addTab(w1,"三（3）班━板演|提问")
-        tabWidget.addTab(w2,"三（4）班━板演|提问")
+        tabWidget.addTab(w1,"三（3）班")
+        tabWidget.addTab(w2,"三（4）班")
         tabWidget.resize(760,700)
         # print(tabWidget.parentWidget())
         btnclose = QPushButton(self)
         btnclose.setText("╳")
         btnclose.setGeometry(735, 5, 20, 20)
-        btnclose.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
+        btnclose.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnclose.clicked.connect(self.close)
         btnMinimized = QPushButton(self)
         btnMinimized.setText("▁")
         btnMinimized.setGeometry(710, 5, 20, 20)
-        btnMinimized.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
+        btnMinimized.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
 
         self.lstchoices = []
@@ -104,8 +105,8 @@ class QuestionDlg(QDialog):
 
         # self.btncolor = self.btngroup.buttons()[0].palette().color(1).getRgb()
         # for i in list(range(0, self.studentNums)):
-        for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+        # for isn in self.studentSnlst:
+        #     self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
             # print(isn)
         # for i in list(range(0, self.studentNums)):
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
@@ -134,7 +135,7 @@ class QuestionDlg(QDialog):
         cur.execute("select studentsn from student where 1=1 " + strwhere)
         self.studentSnlst = cur.fetchall()
         for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png); color:dark;")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
             # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
@@ -163,7 +164,7 @@ class QuestionDlg(QDialog):
             padding: 1px 18px 1px 20px;\
             min-width: 8em;")
         model = tabtitle.model()
-        for row in ["随堂板演", "随堂提问"]:
+        for row in ["随堂演板", "随堂提问"]:
             item = QStandardItem(str(row))
             item.setForeground(QColor('blue'))
             item.setBackground(QColor(0,200,50, 130))
@@ -206,7 +207,7 @@ class QuestionDlg(QDialog):
             btnlayout.addWidget(tmpbtn, irow, icol)
 
         tabbtn.setIcon(QIcon("image/start.png"))
-        tabbtn.setStyleSheet("border: 5px solid green;")
+        tabbtn.setStyleSheet("border: 5px solid yellow;")
         tabbtn.setFixedHeight(45)
         tabbtn.setFixedWidth(100)
         tabbtn.setFont(QFont('黑体', 20))
@@ -327,7 +328,8 @@ class QuestionDlg(QDialog):
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
-            self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png); color:yellow;")
+            self.btngroup.button(int(ibtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
+            # self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png); color:dark;")
             # self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
             # self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
 
@@ -372,7 +374,8 @@ class QuestionDlg(QDialog):
         # print(cur.fetchall(), '111111111111111111')
         otherbtn = random.sample(allstudent, num)[0]
         # self.btngroup.button(int(otherbtn)).setStyleSheet("background-color: red; color:white;")
-        self.btngroup.button(int(otherbtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
+        # self.btngroup.button(int(otherbtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
+        self.btngroup.button(int(otherbtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
         self.btngroup.button(int(otherbtn)).setFocus()
 
         # print(self.lstchoices, 'choice one another00000000000000001')
