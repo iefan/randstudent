@@ -36,7 +36,7 @@ class QuestionDlg(QDialog):
         tabWidget.setStyleSheet("QTabWidget::pane{border:0px;}\
             QTabBar::tab { height: 60px; width: 260px; color:rgb(0, 0, 255); font-size:20px; font-weight:bold;} \
             QTabBar::tab:hover{background:rgb(255,255, 255, 100);} \
-            QTabBar::tab:selected{border-color:white;background:white;color:green;}")
+            QTabBar::tab:selected{border-color:green;background-color:white;color:green;}")
         # tabWidget.setStyleSheet("QTabBar::tab:hover{background:rgb(255,255, 255, 100);}")
         self.btngroup = QButtonGroup()
 
@@ -399,7 +399,7 @@ class QuestionDlg(QDialog):
             return
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/smile.png"))
-        self.btngroup.button(int(value)).setIconSize(QSize(30,30))
+        self.btngroup.button(int(value)).setIconSize(QSize(20,20))
 
         cur = conn.cursor()
         cur.execute("select rightquestions from student where studentsn='" + value + "'")
@@ -427,7 +427,7 @@ class QuestionDlg(QDialog):
             return
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/cry.png"))
-        self.btngroup.button(int(value)).setIconSize(QSize(30,30))
+        self.btngroup.button(int(value)).setIconSize(QSize(20,20))
         # self.btngroup.button(int(value)).setStyleSheet("border-image: url(image/ex_stu.png);")
 
         cur = conn.cursor()
