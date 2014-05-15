@@ -166,6 +166,7 @@ class QuestionDlg(QDialog):
         for row in ["随堂板演", "随堂提问"]:
             item = QStandardItem(str(row))
             item.setForeground(QColor('blue'))
+            item.setBackground(QColor(0,200,50, 130))
             font = item.font()
             font.setPointSize(20)
             item.setFont(font)
@@ -189,7 +190,7 @@ class QuestionDlg(QDialog):
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
             tmpbtn = QPushButton(item[1])
-            tmpbtn.setFont(QFont('黑体', 20))
+            tmpbtn.setFont(QFont('黑体', 16))
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
 
             popMenu = QMenu(self)
@@ -326,7 +327,7 @@ class QuestionDlg(QDialog):
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
-            self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
+            self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png); color:yellow;")
             # self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
             # self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
 
