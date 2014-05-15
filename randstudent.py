@@ -31,6 +31,7 @@ class QuestionDlg(QDialog):
         # self.setWindowFlags(Qt.FramelessWindowHint)
         
         tabWidget=QTabWidget(self)
+        tabWidget.currentChanged.connect(self.changeTab)
         # tabWidget.setTabShape(QTabWidget.Triangular)
         tabWidget.setStyleSheet("QTabWidget::pane{border:0px;}\
             QTabBar::tab { height: 40px; width: 200px; color:rgb(0, 0, 255); font-size:14px; font-weight:bold;} \
@@ -73,17 +74,17 @@ class QuestionDlg(QDialog):
         w2.setLayout(tab2layout)
         w2.setStyleSheet("background-image: url(image/bg.gif);")
 
-        tabWidget.addTab(w1,"三（3）班~~板演|提问")
-        tabWidget.addTab(w2,"三（4）班~~板演|提问")
+        tabWidget.addTab(w1,"三（3）班━板演|提问")
+        tabWidget.addTab(w2,"三（4）班━板演|提问")
         tabWidget.resize(760,700)
         # print(tabWidget.parentWidget())
         btnclose = QPushButton(self)
-        btnclose.setText("X")
+        btnclose.setText("╳")
         btnclose.setGeometry(735, 5, 20, 20)
         btnclose.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
         btnclose.clicked.connect(self.close)
         btnMinimized = QPushButton(self)
-        btnMinimized.setText("_")
+        btnMinimized.setText("▁")
         btnMinimized.setGeometry(710, 5, 20, 20)
         btnMinimized.setStyleSheet("background-color:rgb(0,0,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
@@ -120,6 +121,28 @@ class QuestionDlg(QDialog):
         self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
+
+    def changeTab(self, curtab):
+        if curtab == 0:
+            strwhere = " and studentsn like '03%' "
+        elif curtab == 1:
+            strwhere = " and studentsn like '04%' "
+
+        self.lstchoices = []
+        self.threadcounter = 0
+        cur = conn.cursor()   
+        cur.execute("select studentsn from student where 1=1 " + strwhere)
+        self.studentSnlst = cur.fetchall()
+        for isn in self.studentSnlst:
+            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+            self.btngroup.button(int(isn[0])).setIcon(QIcon())
+            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
+            # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+            curmenu = self.btngroup.button(int(isn[0])).menu()
+            curmenu.actions()[0].setEnabled(True)
+            curmenu.actions()[1].setEnabled(True)
+            
+        cur.close()
 
     def mousePressEvent(self, event):
         self.offset = event.pos()
@@ -258,17 +281,17 @@ class QuestionDlg(QDialog):
 
         # for i in list(range(0, self.studentNums)):
         cur = conn.cursor()   
-        cur.execute("select studentsn from student where 1=1 " + strwhere)
-        self.studentSnlst = cur.fetchall()
+        # cur.execute("select studentsn from student where 1=1 " + strwhere)
+        # self.studentSnlst = cur.fetchall()
 
-        for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
-            self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
-            # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
-            curmenu = self.btngroup.button(int(isn[0])).menu()
-            curmenu.actions()[0].setEnabled(True)
-            curmenu.actions()[1].setEnabled(True)
+        # for isn in self.studentSnlst:
+        #     self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+        #     self.btngroup.button(int(isn[0])).setIcon(QIcon())
+        #     # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
+        #     # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
+        #     curmenu = self.btngroup.button(int(isn[0])).menu()
+        #     curmenu.actions()[0].setEnabled(True)
+        #     curmenu.actions()[1].setEnabled(True)
 
         allstudent = []
         lstrecord = ['0000', '1111']
@@ -463,6 +486,13 @@ class QuestionDlg(QDialog):
         sqlstr2 = 'create table tmprecord (id integer primary key, \
             studentsn varchar(20), \
             datequestion date)'
+
+        strdelete = "delete from student where 1=1"
+        cur.execute(strdelete)
+        conn.commit()
+        strdelete = "delete from tmprecord where 1=1"
+        cur.execute(strdelete)
+        conn.commit()
         # print(sqlstr2)
 
         # cur.execute(sqlstr) 
@@ -471,13 +501,15 @@ class QuestionDlg(QDialog):
         # conn.commit()
 
         # insert example data
-        # strsql = "insert into student values (?, ?, ?,?,?)" 
-        # for i in list(range(0,45)):
-        #     cur.execute(strsql, (None, "03"+str(i+1).zfill(2), "张"+str(i+1), 0, 0))
-        #     conn.commit()
+        a03lst = ["曾忆谊","赵佳泉","翁文秀","林珑","郑铭洁","林泽思","吴崇霖","陈思嘉","欧阳月孜","郭展羽","詹伟哲","黄佳仪","杨秋霞","周奕子","林楚杰","欧伊涵","许腾誉","陈唯凯","陈树凯","林彦君","张钰佳","高锴","杨博凯","林妙菲","林楚鸿","陈展烯","姚静茵","吴欣桐","范思杰","肖佳","马思广","许一帆","姚奕帆","陈海珣","吴黛莹","吴育桐","肖凯帆","林欣阳","叶茂霖","姚楷臻","陈嘉豪","陈琦","杨子楷","陈炎宏","陈幸仪","杨景畅","罗暖婷","郑馨"]
+        a04lst = ["罗恩琪","王可","曾祥威","谢濡婷","温嘉凯","许洁仪","肖欣淇","陈凯佳","林天倩","李乐海","吴文慧","黄文婷","万誉","陈进盛","张裕涵","陈振嘉","王巧玲","林珮琪","陈炜楷","杨健","赵泽锴","张凤临","蔡子丹","陈烨杰","廖妍希","林树超","夏培轩","陈锦森","李星","蔡依婷","姚容创","姚凯扬","沈嘉克","周凡","张玉川","邱金迅","陈菲敏","陈星翰","朱煜楷","郑泽洪","钱剑非","罗奕丰","陈杜炜","林知钦"]
         strsql = "insert into student values (?, ?, ?,?,?)" 
-        for i in list(range(0,48)):
-            cur.execute(strsql, (None, "04"+str(i+1).zfill(2), "李"+str(i+1), 0, 0))
+        for i in list(range(0,len(a03lst))):
+            cur.execute(strsql, (None, "03"+str(i+1).zfill(2), a03lst[i], 0, 0))
+            conn.commit()
+        strsql = "insert into student values (?, ?, ?,?,?)" 
+        for i in list(range(0,len(a04lst))):
+            cur.execute(strsql, (None, "04"+str(i+1).zfill(2), a04lst[i], 0, 0))
             conn.commit()
         cur.close()
         
