@@ -5,16 +5,16 @@ exe=Executable(
      base="Win32Gui",
      icon="image\start.ico"
      )
-includefiles=["image\ex_stu.png","image\smile.png", "image\cry.png"]
+includefiles=["image\ex_stu.png","image\smile.png", "image\cry.png", "student.db"]
 includes=[]
 excludes=[]
 packages=[]
 setup(
 
-     version = "0.0",
-     description = "No Description",
-     author = "Name",
-     name = "App name",
+     version = "1.0",
+     description = "课堂随机提问",
+     author = "iefan",
+     name = "课堂随机提问",
      options = {'build_exe': {'excludes':excludes,'packages':packages,'include_files':includefiles}},
      executables = [exe]
      )
