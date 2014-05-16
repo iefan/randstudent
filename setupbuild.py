@@ -5,7 +5,7 @@ exe=Executable(
      base="Win32Gui",
      icon="image\start.ico"
      )
-includefiles=["image\ex_stu.png","image\smile.png", "image\cry.png", "student.db"]
+includefiles=["image\ex_stu.png","image\smile.png", "image\cry.png", "student.db", "msvcr100.dll", "msvcp100.dll"]
 includes=[]
 excludes=[]
 packages=[]

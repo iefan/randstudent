@@ -191,7 +191,7 @@ class QuestionDlg(QDialog):
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
             tmpbtn = QPushButton(item[1])
-            tmpbtn.setFont(QFont('黑体', 16))
+            tmpbtn.setFont(QFont('宋体', 16))
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
 
             popMenu = QMenu(self)
@@ -210,7 +210,7 @@ class QuestionDlg(QDialog):
         tabbtn.setStyleSheet("border: 5px solid yellow;")
         tabbtn.setFixedHeight(45)
         tabbtn.setFixedWidth(100)
-        tabbtn.setFont(QFont('黑体', 20))
+        tabbtn.setFont(QFont('宋体', 20))
         # tabnums.setFixedHeight(40)
         # tabnums.setFixedWidth(60)
         tabnums.setFont(QFont('Courier New', 20))
