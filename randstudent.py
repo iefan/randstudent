@@ -19,6 +19,7 @@ class MyThread(QThread):
         self.thread_nums = thread_nums
 
     def run(self):
+        # random.seed()
         time.sleep(random.random()*0.8)  # random sleep to imitate working
         self.trigger.emit(self.thread_allstudents, self.thread_nums)
 
@@ -89,13 +90,26 @@ class QuestionDlg(QDialog):
         btnMinimized.setGeometry(710, 5, 20, 20)
         btnMinimized.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
+        btnSysMenu = QPushButton(self)
+        btnSysMenu.setText("▼")
+        btnSysMenu.setGeometry(685, 5, 20, 20)
+        btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
+        btnSysMenu.clicked.connect(lambda: self.showMinimized())
+        popMenu = QMenu(self)
+        entry1 = popMenu.addAction("初始化")
+        self.connect(entry1,SIGNAL('triggered()'), self.initStudent)
+        entry2 = popMenu.addAction("清除提问人员")
+        self.connect(entry2,SIGNAL('triggered()'), self.deleteTmpdata)
+        btnSysMenu.setMenu(popMenu)
+        btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;}")
 
         self.lstchoices = []
         self.threadcounter = 0
         # self.createDb()
         cur = conn.cursor()
-        today = datetime.date.today() 
-        cur.execute("delete from tmprecord where datequestion= '" +str(today) + "'") #delete tmp date no today
+        # today = datetime.date.today() 
+        # cur.execute("delete from tmprecord where datequestion= '" +str(today) + "'") #delete tmp date no today
+        cur.execute("delete from tmprecord where 1=1" )
         # cur.execute("delete from tmprecord where datequestion!= '" +str(today) + "'") #delete tmp date no today
         conn.commit()
 
@@ -122,6 +136,23 @@ class QuestionDlg(QDialog):
         self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
+
+    def initStudent(self):
+        cur = conn.cursor()
+        cur.execute("update student set wrongquestions=0")
+        conn.commit()
+        cur.execute("update student set rightquestions=0")
+        conn.commit()
+
+        # cur.execute("select * from student")
+        # print(cur.fetchall())
+        cur.close()
+
+    def deleteTmpdata(self):
+        cur = conn.cursor()
+        cur.execute("delete from tmprecord where 1=1" )
+        conn.commit()
+        cur.close()
 
     def changeTab(self, curtab):
         if curtab == 0:
@@ -326,6 +357,7 @@ class QuestionDlg(QDialog):
         for isn in self.studentSnlst:
             self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
+        random.seed()
         self.lstchoices = random.sample(allstudent, num)
         for ibtn in self.lstchoices:
             self.btngroup.button(int(ibtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
@@ -372,6 +404,7 @@ class QuestionDlg(QDialog):
 
         # cur.execute("select * from tmprecord")
         # print(cur.fetchall(), '111111111111111111')
+        random.seed()
         otherbtn = random.sample(allstudent, num)[0]
         # self.btngroup.button(int(otherbtn)).setStyleSheet("background-color: red; color:white;")
         # self.btngroup.button(int(otherbtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
