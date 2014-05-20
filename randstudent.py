@@ -367,6 +367,11 @@ class QuestionDlg(QDialog):
 
         self.threadcounter += 1
         if self.threadcounter == 10:
+            for isn in self.studentSnlst:
+                self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
+            for ibtn in self.lstchoices:
+                self.btngroup.button(int(ibtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
+
             cur = conn.cursor()
             if self.choicenum_text.isEnabled():
                 for ibtn in self.lstchoices:
@@ -376,7 +381,12 @@ class QuestionDlg(QDialog):
                     conn.commit()
 
             # cur.execute("select * from tmprecord")
-            # print(cur.fetchall())
+            # tmpaa = []
+            # for item in cur.fetchall():
+            #     tmpaa.append(item[1])
+            #     # print(item[1], sep="|", end="--")
+            # tmpaa.sort()
+            # print(tmpaa)
             
             cur.close()
                 # print(self.btngroup.buttons()[ibtn].text())

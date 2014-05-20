@@ -1,26 +1,12 @@
 from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
-from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QMovie
-from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize, QByteArray
+from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QMovie, QLabel
+from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize, QByteArray, QTimer
 import random, time, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
         
 conn = sqlite3.connect("student.db") 
-
-class MyThread(QThread):
-    trigger = pyqtSignal(type([]), type(1))
-  
-    def __init__(self, parent=None):
-        super(MyThread, self).__init__(parent)
-  
-    def setup(self, thread_allstudents, thread_nums):
-        self.thread_allstudents = thread_allstudents
-        self.thread_nums = thread_nums
-
-    def run(self):
-        time.sleep(random.random()*0.8)  # random sleep to imitate working
-        self.trigger.emit(self.thread_allstudents, self.thread_nums)
 
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
@@ -112,6 +98,8 @@ class QuestionDlg(QDialog):
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
 
+        # q = QTimer()
+
     def changeTab(self, curtab):
         if curtab == 0:
             strwhere = " and studentsn like '03%' "
@@ -124,12 +112,12 @@ class QuestionDlg(QDialog):
         cur.execute("select studentsn from student where 1=1 " + strwhere)
         self.studentSnlst = cur.fetchall()
         for isn in self.studentSnlst:
-            tmpmovie = QMovie("image/ex_stu.gif", QByteArray(), self)
-            self.btngroup.button(int(isn[0])).setMovie(tmpmovie)
-            self.btngroup.button(int(isn[0])).setLayout(QHBoxLayout())
-            self.btngroup.button(int(isn[0])).layout().addWidget(QLabel('Loading...'))
+            # tmpmovie = QMovie("image/ex_stu.gif", QByteArray(), self)
+            # self.btngroup.button(int(isn[0])).setMovie(tmpmovie)
+            # self.btngroup.button(int(isn[0])).setLayout(QHBoxLayout())
+            # self.btngroup.button(int(isn[0])).layout().addWidget(QLabel('Loading...'))
             # self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png); color:dark;")
-            # self.btngroup.button(int(isn[0])).setIcon(QIcon())
+            self.btngroup.button(int(isn[0])).setIcon(QIcon())
             # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
             # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
             curmenu = self.btngroup.button(int(isn[0])).menu()
@@ -183,9 +171,14 @@ class QuestionDlg(QDialog):
             icol = tmpnum % 7
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
+
             tmpbtn = QPushButton(item[1])
             tmpbtn.setFont(QFont('宋体', 16))
+            # tmpbtn.setFixedWidth(20)
+            # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
+            tmpbtn.setStyleSheet("background-color: rgba(255,255,255,20);")
+            tmpbtn.setFlat(True)
 
             popMenu = QMenu(self)
             entry1 = popMenu.addAction("正确")
@@ -197,7 +190,18 @@ class QuestionDlg(QDialog):
             tmpbtn.setMenu(popMenu)
             tmpbtn.setAutoDefault(False)
             self.btngroup.addButton(tmpbtn, int(item[0]))
-            btnlayout.addWidget(tmpbtn, irow, icol)
+
+            tmpmovie = QMovie('image/ex_stu.gif', QByteArray(), self)
+            tmplabel = QLabel()
+            tmplabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            tmplabel.setAlignment(Qt.AlignCenter)
+            tmplabel.setMovie(tmpmovie)
+            tmplabel.setLayout(QHBoxLayout())
+            tmplabel.layout().addWidget(tmpbtn)
+            tmpmovie.start()
+            tmpmovie.stop()
+
+            btnlayout.addWidget(tmplabel, irow, icol)
 
         tabbtn.setIcon(QIcon("image/start.png"))
         tabbtn.setStyleSheet("border: 5px solid yellow;")
@@ -264,6 +268,7 @@ class QuestionDlg(QDialog):
                 self.choicenum_text2.setCurrentIndex(2)
 
     def startChoice(self): 
+   
         self.lstchoices = []
         self.threadcounter = 0
         whichtabpage = self.sender().parentWidget().accessibleName()
@@ -309,39 +314,31 @@ class QuestionDlg(QDialog):
                 allstudent.append(item[0])
         # print(tabCombonums.currentText())
         cur.close()
-        for i in range(10):
-            thread = MyThread(self)
-            thread.trigger.connect(self.choicestudent)
-            thread.setup(allstudent, nums)            # just setting up a parameter
-            thread.start()
 
-    def choicestudent(self, allstudent, num): 
         for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
-            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")
-        self.lstchoices = random.sample(allstudent, num)
-        for ibtn in self.lstchoices:
-            self.btngroup.button(int(ibtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
-            # self.btngroup.button(int(ibtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png); color:dark;")
-            # self.btngroup.button(int(ibtn)).setStyleSheet("background-color: red; color:white;")
-            # self.btngroup.buttons()[ibtn].setStyleSheet("background-color: red; color:white;")
-
-        self.threadcounter += 1
-        if self.threadcounter == 10:
-            cur = conn.cursor()
-            if self.choicenum_text.isEnabled():
-                for ibtn in self.lstchoices:
-                    today = datetime.date.today()
-                    strsql = "insert into tmprecord values (?, ?, ?)" 
-                    cur.execute(strsql, (None, ibtn, today))
-                    conn.commit()
-
-            # cur.execute("select * from tmprecord")
-            # print(cur.fetchall())
+            self.btngroup.button(int(isn[0])).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             
-            cur.close()
-                # print(self.btngroup.buttons()[ibtn].text())
-            self.threadcounter = 0
+        for istu in allstudent:
+            self.btngroup.button(int(istu)).parentWidget().movie().start()
+            # print(istu)
+
+        QTimer.singleShot(1000, lambda: self.stopmovie(allstudent, nums))
+       
+    def stopmovie(self, allstudent="", num=1):
+        for istu in allstudent:
+            self.btngroup.button(int(istu)).parentWidget().movie().stop()
+
+        self.lstchoices = random.sample(allstudent, num)
+        cur = conn.cursor()
+        today = datetime.date.today()
+        for ibtn in self.lstchoices:
+            self.btngroup.button(int(ibtn)).parentWidget().setStyleSheet("border: 3px solid rgb(255,0,0); color:black; font-size:26px;")
+            self.btngroup.button(int(ibtn)).setStyleSheet("color:black; font-size:26px;")
+            strsql = "insert into tmprecord values (?, ?, ?)" 
+            cur.execute(strsql, (None, ibtn, today))
+            conn.commit()
+        cur.close()
 
     def choiceOneStudent(self, curbtn, num=1):
         # print(self.findChildren(QComboBox))
@@ -371,10 +368,8 @@ class QuestionDlg(QDialog):
         self.btngroup.button(int(otherbtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
         self.btngroup.button(int(otherbtn)).setFocus()
 
-        # print(self.lstchoices, 'choice one another00000000000000001')
         self.lstchoices.remove(curbtn)
         self.lstchoices.append(otherbtn)
-        # print(self.lstchoices, 'choice one another000000000000000002')
 
         # cur.execute("delete from tmprecord where studentsn='" + curbtn + "'") # can not delete ,because this student is ill.
         # conn.commit()
