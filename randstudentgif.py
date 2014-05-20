@@ -77,7 +77,6 @@ class QuestionDlg(QDialog):
         btnMinimized.clicked.connect(lambda: self.showMinimized())
 
         self.lstchoices = []
-        self.threadcounter = 0
         # self.createDb()
         cur = conn.cursor()
         today = datetime.date.today() 
@@ -107,7 +106,6 @@ class QuestionDlg(QDialog):
             strwhere = " and studentsn like '04%' "
 
         self.lstchoices = []
-        self.threadcounter = 0
         cur = conn.cursor()   
         cur.execute("select studentsn from student where 1=1 " + strwhere)
         self.studentSnlst = cur.fetchall()
@@ -197,6 +195,7 @@ class QuestionDlg(QDialog):
             tmplabel.setAlignment(Qt.AlignCenter)
             tmplabel.setMovie(tmpmovie)
             tmplabel.setLayout(QHBoxLayout())
+            tmplabel.layout().setContentsMargins(0,0,0,0)
             tmplabel.layout().addWidget(tmpbtn)
             tmpmovie.start()
             tmpmovie.stop()
@@ -267,32 +266,30 @@ class QuestionDlg(QDialog):
                 self.choicenum_text2.setEnabled(True)
                 self.choicenum_text2.setCurrentIndex(2)
 
-    def startChoice(self): 
-   
-        self.lstchoices = []
-        self.threadcounter = 0
-        whichtabpage = self.sender().parentWidget().accessibleName()
-        if whichtabpage == "w1tab":
+    def startChoice(self, usernum="", oldbtn=""): 
+        if usernum== "" and oldbtn == "":
+            self.lstchoices = []
+
+        if oldbtn == "":
+            whichtabpage = self.sender().parentWidget().accessibleName()
+            if whichtabpage == "w1tab":
+                flag = "3"
+            else:
+                flag = "4"
+        else:
+            if oldbtn[:2] == "03":
+                flag = "3"
+            else:
+                flag = "4"
+                
+        if flag== "3":
             strwhere = " and studentsn like '03%' "
             tabCombonums = self.findChild(QComboBox, 'w1combonums')
         else:
             strwhere = " and studentsn like '04%' "
             tabCombonums = self.findChild(QComboBox, 'w2combonums')
 
-        # for i in list(range(0, self.studentNums)):
         cur = conn.cursor()   
-        # cur.execute("select studentsn from student where 1=1 " + strwhere)
-        # self.studentSnlst = cur.fetchall()
-
-        # for isn in self.studentSnlst:
-        #     self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
-        #     self.btngroup.button(int(isn[0])).setIcon(QIcon())
-        #     # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
-        #     # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
-        #     curmenu = self.btngroup.button(int(isn[0])).menu()
-        #     curmenu.actions()[0].setEnabled(True)
-        #     curmenu.actions()[1].setEnabled(True)
-
         allstudent = []
         lstrecord = ['0000', '1111']
         if tabCombonums.isEnabled():
@@ -304,7 +301,10 @@ class QuestionDlg(QDialog):
         for item in cur.fetchall():
             allstudent.append(item[0])
 
-        nums = int(tabCombonums.currentText())
+        if usernum == "":
+            nums = int(tabCombonums.currentText())
+        else:
+            nums = usernum
         if nums >= len(allstudent):
             cur.execute("delete from tmprecord where datequestion like '%%' ") #delete tmp date no today
             conn.commit()
@@ -318,68 +318,43 @@ class QuestionDlg(QDialog):
         for isn in self.studentSnlst:
             self.btngroup.button(int(isn[0])).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            curmenu = self.btngroup.button(int(isn[0])).menu()
+            curmenu.actions()[0].setEnabled(True)
+            curmenu.actions()[1].setEnabled(True)
             
-        for istu in allstudent:
-            self.btngroup.button(int(istu)).parentWidget().movie().start()
+        for istu in self.studentSnlst:
+            self.btngroup.button(int(istu[0])).parentWidget().movie().start()
             # print(istu)
-
-        QTimer.singleShot(1000, lambda: self.stopmovie(allstudent, nums))
+        # print(allstudent)
+        if oldbtn == "":
+            self.lstchoices = random.sample(allstudent, nums)
+            QTimer.singleShot(1000, self.stopmovie)
+        else:
+            otherbtn = random.sample(allstudent, 1)[0]
+            self.lstchoices.remove(oldbtn)
+            self.lstchoices.append(otherbtn)
+            self.stopmovie()
        
-    def stopmovie(self, allstudent="", num=1):
-        for istu in allstudent:
-            self.btngroup.button(int(istu)).parentWidget().movie().stop()
+    def stopmovie(self):
+        for istu in self.studentSnlst:
+            self.btngroup.button(int(istu[0])).parentWidget().movie().stop()
 
-        self.lstchoices = random.sample(allstudent, num)
+        # print("~~~~~~~~~", self.lstchoices)
         cur = conn.cursor()
         today = datetime.date.today()
         for ibtn in self.lstchoices:
+            # print('1111', ibtn, self.btngroup.button(int(ibtn)))
+            # print(self.btngroup.button(int(ibtn)).text())
             self.btngroup.button(int(ibtn)).parentWidget().setStyleSheet("border: 3px solid rgb(255,0,0); color:black; font-size:26px;")
-            self.btngroup.button(int(ibtn)).setStyleSheet("color:black; font-size:26px;")
-            strsql = "insert into tmprecord values (?, ?, ?)" 
-            cur.execute(strsql, (None, ibtn, today))
-            conn.commit()
-        cur.close()
-
-    def choiceOneStudent(self, curbtn, num=1):
-        # print(self.findChildren(QComboBox))
-        if curbtn[:2] == "03":
-            strwhere = " and studentsn like '03%' "
-            tabCombonums = self.findChild(QComboBox, 'w1combonums')
-        elif  curbtn[:2] == "04":
-            strwhere = " and studentsn like '04%' "
-            tabCombonums = self.findChild(QComboBox, 'w2combonums')
-
-        allstudent = []
-        cur = conn.cursor()   
-        lstrecord = ['0000', '1111']
-        if tabCombonums.isEnabled():
-            cur.execute("select studentsn from tmprecord where 1=1 " + strwhere)  
-            for item in cur.fetchall():
-                lstrecord.append(item[0])
-        cur.execute("select studentsn from student where studentsn not in " + str(tuple(lstrecord)) + strwhere)
-        for item in cur.fetchall():
-            allstudent.append(item[0])
+            self.btngroup.button(int(ibtn)).setStyleSheet("border: 1px solid rgba(255,255,255,0);color:black; font-size:26px;")
+            cur.execute("select count(*) from tmprecord where studentsn='" + str(ibtn) + "'")
+            if cur.fetchall()[0][0] == 0:
+                strsql = "insert into tmprecord values (?, ?, ?)"
+                cur.execute(strsql, (None, ibtn, today))
+                conn.commit()
 
         # cur.execute("select * from tmprecord")
-        # print(cur.fetchall(), '111111111111111111')
-        otherbtn = random.sample(allstudent, num)[0]
-        # self.btngroup.button(int(otherbtn)).setStyleSheet("background-color: red; color:white;")
-        # self.btngroup.button(int(otherbtn)).setStyleSheet("border-image: url(image/ex_stu_ok.png);")
-        self.btngroup.button(int(otherbtn)).setStyleSheet("border: 6px solid rgb(255,0,0); color:black; font-size:26px;")
-        self.btngroup.button(int(otherbtn)).setFocus()
-
-        self.lstchoices.remove(curbtn)
-        self.lstchoices.append(otherbtn)
-
-        # cur.execute("delete from tmprecord where studentsn='" + curbtn + "'") # can not delete ,because this student is ill.
-        # conn.commit()
-        if tabCombonums.isEnabled():
-            today = datetime.date.today()
-            cur.execute("insert into tmprecord values (?, ?, ?)", (None, otherbtn, today))
-            conn.commit()
-        # cur.execute("select * from tmprecord")
-        # print(cur.fetchall(), '2222222222222')
-
+        # print(cur.fetchall())
         cur.close()
 
     def answerRight(self, value):
@@ -403,10 +378,6 @@ class QuestionDlg(QDialog):
             conn.commit()
         curmenu.actions()[0].setEnabled(False)
         curmenu.actions()[1].setEnabled(True)
-        # curmenu.actions()[2].setEnabled(False)
-        
-        # cur.execute("select * from student where studentsn='" + value + "'")
-        # print(cur.fetchall(), 'right-------')
 
         cur.close()
 
@@ -433,19 +404,15 @@ class QuestionDlg(QDialog):
         curmenu.actions()[0].setEnabled(True)
         curmenu.actions()[1].setEnabled(False)
 
-        # cur.execute("select * from student where studentsn='" + value + "'")
-        # print(cur.fetchall(), 'wrong--')
-
         cur.close()
 
     def resetStudent(self, value):
         if value not in self.lstchoices:
             return
 
-        # self.btngroup.button(int(value)).setStyleSheet("background-color: rgb(120,220,220);")
-        self.btngroup.button(int(value)).setIcon(QIcon())
-        self.btngroup.button(int(value)).setStyleSheet("border-image: url(image/ex_stu.png);")
-        self.btngroup.button(int(value)).setAutoDefault(False)
+        # self.btngroup.button(int(value)).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+        # self.btngroup.button(int(value)).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+        # self.btngroup.button(int(value)).setAutoDefault(False)
 
         cur = conn.cursor()
 
@@ -462,9 +429,11 @@ class QuestionDlg(QDialog):
             conn.commit()
         cur.close()
 
-        curmenu.actions()[0].setEnabled(True)
-        curmenu.actions()[1].setEnabled(True)
-        self.choiceOneStudent(value)
+        self.startChoice(usernum=1, oldbtn=value)
+
+        # curmenu.actions()[0].setEnabled(True)
+        # curmenu.actions()[1].setEnabled(True)
+        # self.choiceOneStudent(value)
 
     def createDb(self):
         cur = conn.cursor()
