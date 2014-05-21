@@ -63,34 +63,40 @@ class QuestionDlg(QDialog):
 
         tabWidget.addTab(w1,"三（3）班")
         tabWidget.addTab(w2,"三（4）班")
-        tabWidget.resize(760,700)
+        tabWidget.resize(740,700)
         # print(tabWidget.parentWidget())
         btnclose = QPushButton(self)
+        btnclose.setToolTip("关闭")
         btnclose.setText("╳")
-        btnclose.setGeometry(735, 5, 20, 20)
+        btnclose.setGeometry(715, 5, 20, 20)
         btnclose.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnclose.clicked.connect(self.close)
         btnMinimized = QPushButton(self)
+        btnMinimized.setToolTip("最小化")
         btnMinimized.setText("▁")
-        btnMinimized.setGeometry(710, 5, 20, 20)
+        btnMinimized.setGeometry(690, 5, 20, 20)
         btnMinimized.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
-
-        self.lstchoices = []
-        # self.createDb()
-        cur = conn.cursor()
-        today = datetime.date.today() 
-        cur.execute("delete from tmprecord where datequestion= '" +str(today) + "'") #delete tmp date no today
-        # cur.execute("delete from tmprecord where datequestion!= '" +str(today) + "'") #delete tmp date no today
-        conn.commit()
-
-        # cur.execute("select studentsn from student ")
-        # self.studentSnlst = cur.fetchall()
-        cur.close()
+        btnSysMenu = QPushButton(self)
+        # btnSysMenu.setText("▼")
+        btnSysMenu.setGeometry(665, 5, 20, 20)
+        btnSysMenu.setToolTip("系统设置")
+        btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
+        btnSysMenu.clicked.connect(lambda: self.showMinimized())
+        menufont = QFont("宋体", 14)
+        popMenu = QMenu(self)
+        entry1 = popMenu.addAction("初始化")
+        entry1.setFont(menufont)
+        self.connect(entry1,SIGNAL('triggered()'), self.initStudent)
+        entry2 = popMenu.addAction("清除提问人员")
+        entry2.setFont(menufont)
+        self.connect(entry2,SIGNAL('triggered()'), self.deleteTmpdata)
+        btnSysMenu.setMenu(popMenu)
+        btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;}")
 
         self.setWindowTitle("课堂随机提问")
         self.setWindowIcon(QIcon("image/start.ico"))
-        self.setGeometry(100, 20, 760, 700)
+        self.setGeometry(100, 20, 740, 700)
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
         self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
@@ -98,6 +104,22 @@ class QuestionDlg(QDialog):
         self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
 
         # q = QTimer()
+    def initStudent(self):
+        cur = conn.cursor()
+        cur.execute("update student set wrongquestions=0")
+        conn.commit()
+        cur.execute("update student set rightquestions=0")
+        conn.commit()
+
+        # cur.execute("select * from student")
+        # print(cur.fetchall())
+        cur.close()
+
+    def deleteTmpdata(self):
+        cur = conn.cursor()
+        cur.execute("delete from tmprecord where 1=1" )
+        conn.commit()
+        cur.close()
 
     def changeTab(self, curtab):
         if curtab == 0:
@@ -106,18 +128,15 @@ class QuestionDlg(QDialog):
             strwhere = " and studentsn like '04%' "
 
         self.lstchoices = []
-        cur = conn.cursor()   
+        cur = conn.cursor()
+        cur.execute("delete from tmprecord where 1=1")
+        conn.commit()
         cur.execute("select studentsn from student where 1=1 " + strwhere)
         self.studentSnlst = cur.fetchall()
         for isn in self.studentSnlst:
-            # tmpmovie = QMovie("image/ex_stu.gif", QByteArray(), self)
-            # self.btngroup.button(int(isn[0])).setMovie(tmpmovie)
-            # self.btngroup.button(int(isn[0])).setLayout(QHBoxLayout())
-            # self.btngroup.button(int(isn[0])).layout().addWidget(QLabel('Loading...'))
-            # self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png); color:dark;")
+            self.btngroup.button(int(isn[0])).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
-            # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
             curmenu = self.btngroup.button(int(isn[0])).menu()
             curmenu.actions()[0].setEnabled(True)
             curmenu.actions()[1].setEnabled(True)
@@ -128,11 +147,14 @@ class QuestionDlg(QDialog):
         self.offset = event.pos()
         # print(self.offset)
     def mouseMoveEvent(self, event):
-        x=event.globalX()
-        y=event.globalY()
-        x_w = self.offset.x()
-        y_w = self.offset.y()
-        self.move(x-x_w, y-y_w)
+        if hasattr(self, 'offset'):
+            x=event.globalX()
+            y=event.globalY()
+            x_w = self.offset.x()
+            y_w = self.offset.y()
+            self.move(x-x_w, y-y_w)
+        else:
+            pass
 
     def genOneTab(self, tabtitle="", tabbtn="", tabnums="", strwhere = "where studentsn like '03%' "):
         # tabtitle.setFixedHeight(40)
@@ -171,10 +193,9 @@ class QuestionDlg(QDialog):
             btnlayout.setRowMinimumHeight(irow, 80)
 
             tmpbtn = QPushButton(item[1])
-            tmpbtn.setFont(QFont('宋体', 16))
-            # tmpbtn.setFixedWidth(20)
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
+            tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmpbtn.setStyleSheet("background-color: rgba(255,255,255,20);")
             tmpbtn.setFlat(True)
 
@@ -194,8 +215,10 @@ class QuestionDlg(QDialog):
             tmplabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             tmplabel.setAlignment(Qt.AlignCenter)
             tmplabel.setMovie(tmpmovie)
+            tmplabel.setScaledContents(True)
             tmplabel.setLayout(QHBoxLayout())
             tmplabel.layout().setContentsMargins(0,0,0,0)
+            tmplabel.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmplabel.layout().addWidget(tmpbtn)
             tmpmovie.start()
             tmpmovie.stop()
@@ -239,13 +262,8 @@ class QuestionDlg(QDialog):
         return(titleLayout, btnlayout, bottomlayout)
 
     def changeTitle(self, curindex):
-        # whichtabpage = self.sender().parentWidget().parentWidget().parentWidget()
-        # print(whichtabpage.tabText(0), whichtabpage1)
         for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet("border-image: url(image/ex_stu.png);")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            # self.btngroup.buttons()[i].setStyleSheet("background-color: rgb(120,220,220);")  
-            # self.btngroup.buttons()[i].setStyleSheet("border-image: url(image/ex_stu.png);")
             curmenu = self.btngroup.button(int(isn[0])).menu()
             curmenu.actions()[0].setEnabled(True)
             curmenu.actions()[1].setEnabled(True)
@@ -267,21 +285,13 @@ class QuestionDlg(QDialog):
                 self.choicenum_text2.setCurrentIndex(2)
 
     def startChoice(self, usernum="", oldbtn=""): 
-        if usernum== "" and oldbtn == "":
-            self.lstchoices = []
-
-        if oldbtn == "":
-            whichtabpage = self.sender().parentWidget().accessibleName()
-            if whichtabpage == "w1tab":
-                flag = "3"
-            else:
-                flag = "4"
+        if oldbtn != "":
+            flag = int(oldbtn[:2])
         else:
-            if oldbtn[:2] == "03":
-                flag = "3"
-            else:
-                flag = "4"
-                
+            self.lstchoices = []
+            whichtabpage = self.sender().parentWidget().accessibleName()
+            flag = (whichtabpage == "w1tab") and "3" or "4"
+            
         if flag== "3":
             strwhere = " and studentsn like '03%' "
             tabCombonums = self.findChild(QComboBox, 'w1combonums')
@@ -327,9 +337,11 @@ class QuestionDlg(QDialog):
             # print(istu)
         # print(allstudent)
         if oldbtn == "":
+            random.seed()
             self.lstchoices = random.sample(allstudent, nums)
             QTimer.singleShot(1000, self.stopmovie)
         else:
+            random.seed()
             otherbtn = random.sample(allstudent, 1)[0]
             self.lstchoices.remove(oldbtn)
             self.lstchoices.append(otherbtn)
