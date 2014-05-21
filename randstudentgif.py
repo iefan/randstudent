@@ -136,6 +136,7 @@ class QuestionDlg(QDialog):
         for isn in self.studentSnlst:
             self.btngroup.button(int(isn[0])).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
             curmenu = self.btngroup.button(int(isn[0])).menu()
             curmenu.actions()[0].setEnabled(True)
@@ -195,8 +196,7 @@ class QuestionDlg(QDialog):
             tmpbtn = QPushButton(item[1])
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
-            tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
-            tmpbtn.setStyleSheet("background-color: rgba(255,255,255,20);")
+            # tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmpbtn.setFlat(True)
 
             popMenu = QMenu(self)
@@ -218,7 +218,7 @@ class QuestionDlg(QDialog):
             tmplabel.setScaledContents(True)
             tmplabel.setLayout(QHBoxLayout())
             tmplabel.layout().setContentsMargins(0,0,0,0)
-            tmplabel.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            # tmplabel.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmplabel.layout().addWidget(tmpbtn)
             tmpmovie.start()
             tmpmovie.stop()
@@ -286,7 +286,7 @@ class QuestionDlg(QDialog):
 
     def startChoice(self, usernum="", oldbtn=""): 
         if oldbtn != "":
-            flag = int(oldbtn[:2])
+            flag = str(int(oldbtn[:2]))
         else:
             self.lstchoices = []
             whichtabpage = self.sender().parentWidget().accessibleName()
@@ -328,6 +328,9 @@ class QuestionDlg(QDialog):
         for isn in self.studentSnlst:
             self.btngroup.button(int(isn[0])).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
+            self.btngroup.button(int(isn[0])).setIcon(QIcon())
+
             curmenu = self.btngroup.button(int(isn[0])).menu()
             curmenu.actions()[0].setEnabled(True)
             curmenu.actions()[1].setEnabled(True)
@@ -343,6 +346,7 @@ class QuestionDlg(QDialog):
         else:
             random.seed()
             otherbtn = random.sample(allstudent, 1)[0]
+            self.btngroup.button(int(otherbtn)).setFocus()
             self.lstchoices.remove(oldbtn)
             self.lstchoices.append(otherbtn)
             self.stopmovie()
@@ -359,6 +363,7 @@ class QuestionDlg(QDialog):
             # print(self.btngroup.button(int(ibtn)).text())
             self.btngroup.button(int(ibtn)).parentWidget().setStyleSheet("border: 3px solid rgb(255,0,0); color:black; font-size:26px;")
             self.btngroup.button(int(ibtn)).setStyleSheet("border: 1px solid rgba(255,255,255,0);color:black; font-size:26px;")
+            self.btngroup.button(int(ibtn)).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             cur.execute("select count(*) from tmprecord where studentsn='" + str(ibtn) + "'")
             if cur.fetchall()[0][0] == 0:
                 strsql = "insert into tmprecord values (?, ?, ?)"
