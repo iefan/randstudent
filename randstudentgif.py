@@ -28,7 +28,7 @@ class QuestionDlg(QDialog):
 
         w1=QWidget()
         w1.setAccessibleName("w1tab")
-        self.w1title = QComboBox()
+        self.w1title = QLabel()
         self.btn_start = QPushButton("开始")
         self.choicenum_text = QComboBox()
         self.choicenum_text.setObjectName('w1combonums')
@@ -48,7 +48,7 @@ class QuestionDlg(QDialog):
         # firstUi.setupUi(w1)
         w2=QWidget()
         w2.setAccessibleName("w2tab")
-        self.w2title = QComboBox()
+        self.w2title = QLabel()
         self.btn_start2 = QPushButton("开始")
         self.choicenum_text2 = QComboBox()
         self.choicenum_text2.setObjectName('w2combonums')
@@ -83,7 +83,7 @@ class QuestionDlg(QDialog):
         btnSysMenu.setToolTip("系统设置")
         btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnSysMenu.clicked.connect(lambda: self.showMinimized())
-        menufont = QFont("宋体", 14)
+        menufont = QFont("宋体", 12)
         popMenu = QMenu(self)
         entry1 = popMenu.addAction("初始化")
         entry1.setFont(menufont)
@@ -99,9 +99,9 @@ class QuestionDlg(QDialog):
         self.setGeometry(100, 20, 740, 700)
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
-        self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
+        # self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
-        self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
+        # self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
 
         # q = QTimer()
     def initStudent(self):
@@ -147,6 +147,7 @@ class QuestionDlg(QDialog):
     def mousePressEvent(self, event):
         self.offset = event.pos()
         # print(self.offset)
+
     def mouseMoveEvent(self, event):
         if hasattr(self, 'offset'):
             x=event.globalX()
@@ -161,22 +162,13 @@ class QuestionDlg(QDialog):
         # tabtitle.setFixedHeight(40)
         # tabtitle.setFixedWidth(160)
         tabtitle.setFont(QFont('Courier New', 20))
+        tabtitle.setText("随堂提问演板")
         tabtitle.setStyleSheet("border: 3px solid blue;\
             border-radius: 6px; \
             padding: 1px 18px 1px 20px;\
             min-width: 8em;")
-        model = tabtitle.model()
-        for row in ["随堂演板", "随堂提问"]:
-            item = QStandardItem(str(row))
-            item.setForeground(QColor('blue'))
-            item.setBackground(QColor(0,200,50, 130))
-            font = item.font()
-            font.setPointSize(20)
-            item.setFont(font)
-            model.appendRow(item)
-        tabtitle.setCurrentIndex(0)
-        titleLayout = QHBoxLayout()
         tabtitle.setMinimumHeight(50);
+        titleLayout = QHBoxLayout()
         titleLayout.addWidget(tabtitle)
         titleLayout.setAlignment(tabtitle, Qt.AlignCenter)
        
@@ -230,18 +222,21 @@ class QuestionDlg(QDialog):
         tabbtn.setFixedHeight(45)
         tabbtn.setFixedWidth(100)
         tabbtn.setFont(QFont('宋体', 20))
-        # tabnums.setFixedHeight(40)
+        # tabnums.setFixedHeight(45)
         # tabnums.setFixedWidth(60)
         tabnums.setFont(QFont('Courier New', 20))
         tabnums.setStyleSheet("border: 5px solid blue; color:red;font-weight:bold;font-size:26px;\
             border-radius: 6px; \
             padding: 1px 1px 1px 1px;\
             min-width: 2em; ")
-        # tabnums.VerticalContentAlignment="Center"
-        # tabnums.addItems(["1", "2", "3", "4", "5", "6"])
+        tabnums.setEditable(True)
+        tabnums.lineEdit().setReadOnly(True);
+        tabnums.lineEdit().setAlignment(Qt.AlignCenter);
+
         model = tabnums.model()
         for row in list(range(1, 7)):
             item = QStandardItem(str(row))
+            item.setTextAlignment(Qt.AlignCenter)
             # item.setStyleSheet("background-color:rgb(0,0,255)")
             item.setForeground(QColor('red'))
             item.setBackground(QColor(0,200,50, 130))
@@ -250,6 +245,9 @@ class QuestionDlg(QDialog):
             # item.setFont(font)
             model.appendRow(item)
         tabnums.setCurrentIndex(2)
+        # tabnums.setStyleSheet ("QComboBox::drop-down {border-width: 100px;}")
+        # tabnums.setStyleSheet ("QComboBox::down-arrow {image: url(image/downarrow.png);top: 10px;left: 1px;}")
+        
 
         bottomlayout = QHBoxLayout()
         bottomlayout.setSizeConstraint(QLayout.SetFixedSize)
@@ -260,30 +258,7 @@ class QuestionDlg(QDialog):
      
         cur.close()
         return(titleLayout, btnlayout, bottomlayout)
-
-    def changeTitle(self, curindex):
-        for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            curmenu = self.btngroup.button(int(isn[0])).menu()
-            curmenu.actions()[0].setEnabled(True)
-            curmenu.actions()[1].setEnabled(True)
-
-        whichtabpage = self.sender().parentWidget().accessibleName()
-        if whichtabpage == "w1tab":
-            if curindex == 1:
-                self.choicenum_text.setCurrentIndex(0)
-                self.choicenum_text.setEnabled(False)
-            else:
-                self.choicenum_text.setEnabled(True)
-                self.choicenum_text.setCurrentIndex(2)
-        else:
-            if curindex == 1:
-                self.choicenum_text2.setCurrentIndex(0)
-                self.choicenum_text2.setEnabled(False)
-            else:
-                self.choicenum_text2.setEnabled(True)
-                self.choicenum_text2.setCurrentIndex(2)
-
+    
     def startChoice(self, usernum="", oldbtn=""): 
         if oldbtn != "":
             flag = str(int(oldbtn[:2]))
@@ -354,6 +329,7 @@ class QuestionDlg(QDialog):
     def stopmovie(self):
         for istu in self.studentSnlst:
             self.btngroup.button(int(istu[0])).parentWidget().movie().stop()
+            self.btngroup.button(int(istu[0])).parentWidget().movie().jumpToFrame(0)
 
         # print("~~~~~~~~~", self.lstchoices)
         cur = conn.cursor()

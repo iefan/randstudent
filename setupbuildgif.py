@@ -1,7 +1,7 @@
 from cx_Freeze import setup, Executable
 
 exe=Executable(
-     script="randstudent.py",
+     script="randstudentgif.py",
      base="Win32Gui",
      icon="image\start.ico"
      )
