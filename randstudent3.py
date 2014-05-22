@@ -25,6 +25,13 @@ class QuestionDlg(QDialog):
             QTabBar::tab:selected{border-color:green;background-color:white;color:green;}")
         # tabWidget.setStyleSheet("QTabBar::tab:hover{background:rgb(255,255, 255, 100);}")
         self.btngroup = QButtonGroup()
+        self.popMenu = QMenu(self)
+        entry1 = self.popMenu.addAction("正确")
+        self.connect(entry1,SIGNAL('triggered()'), lambda : self.answerRight())
+        entry2 = self.popMenu.addAction("错误")
+        self.connect(entry2,SIGNAL('triggered()'), lambda : self.answerWrong())
+        entry3 = self.popMenu.addAction("替换")
+        self.connect(entry3,SIGNAL('triggered()'), lambda : self.resetStudent())
 
         w1=QWidget()
         w1.setAccessibleName("w1tab")
@@ -102,10 +109,25 @@ class QuestionDlg(QDialog):
         # self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         # self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
-        # self.btngroup.buttonClicked[int].connect(self.btns_click)
+        self.btngroup.buttonClicked[int].connect(self.btns_click)
         # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), lambda:self.btns_click())
 
-    # def btns_click(self, btnid):
+    # def on_context_menu(self, point):
+    #     print(point)
+    #     self.popMenu.exec_(self.button.mapToGlobal(point)) 
+
+    def btns_click(self, btnid):
+        # print(self.btngroup.button(btnid).rect())
+        # print(self.mapToGlobal(self.btngroup.button(btnid).pos()))
+        self.g_curbtn = str(btnid).zfill(4)
+        pos = self.btngroup.button(btnid).mapToGlobal(self.btngroup.button(btnid).pos())
+        width = self.btngroup.button(btnid).rect().height()
+        # print(pos, width)
+        pos.setY(pos.y()+width-5)
+        self.popMenu.exec_(pos)
+        # print(self.g_curbtn)
+
+        # self.popMenu.show()
         # print(btnid)
 
         # q = QTimer()
@@ -133,6 +155,9 @@ class QuestionDlg(QDialog):
             strwhere = " and studentsn like '04%' "
 
         self.lstchoices = []
+        self.g_curbtn = ""
+        self.dict_choices = {}
+
         cur = conn.cursor()
         cur.execute("delete from tmprecord where 1=1")
         conn.commit()
@@ -143,9 +168,9 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            curmenu = self.btngroup.button(int(isn[0])).menu()
-            curmenu.actions()[0].setEnabled(True)
-            curmenu.actions()[1].setEnabled(True)
+            # curmenu = self.btngroup.button(int(isn[0])).menu()
+            # curmenu.actions()[0].setEnabled(True)
+            # curmenu.actions()[1].setEnabled(True)
             # curmenu.show()
             # print(curmenu.isVisible())
 
@@ -197,15 +222,8 @@ class QuestionDlg(QDialog):
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
             # tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmpbtn.setFlat(True)
+            # self.connect(tmpbtn, SIGNAL('customContextMenuRequested(const QPoint&)'), self.on_context_menu)
 
-            popMenu = QMenu(self)
-            entry1 = popMenu.addAction("正确")
-            self.connect(entry1,SIGNAL('triggered()'), lambda item=item[0]: self.answerRight(item))
-            entry2 = popMenu.addAction("错误")
-            self.connect(entry2,SIGNAL('triggered()'), lambda item=item[0]: self.answerWrong(item))
-            entry3 = popMenu.addAction("替换")
-            self.connect(entry3,SIGNAL('triggered()'), lambda item=item[0]: self.resetStudent(item))
-            tmpbtn.setMenu(popMenu)
             tmpbtn.setAutoDefault(False)
             self.btngroup.addButton(tmpbtn, int(item[0]))
 
@@ -266,6 +284,7 @@ class QuestionDlg(QDialog):
             flag = str(int(oldbtn[:2]))
         else:
             self.lstchoices = []
+            self.dict_choices = {}
             whichtabpage = self.sender().parentWidget().accessibleName()
             flag = (whichtabpage == "w1tab") and "3" or "4"
             
@@ -308,9 +327,9 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
 
-            curmenu = self.btngroup.button(int(isn[0])).menu()
-            curmenu.actions()[0].setEnabled(True)
-            curmenu.actions()[1].setEnabled(True)
+            # curmenu = self.btngroup.button(int(isn[0])).menu()
+            # curmenu.actions()[0].setEnabled(True)
+            # curmenu.actions()[1].setEnabled(True)
             
         for istu in self.studentSnlst:
             self.btngroup.button(int(istu[0])).parentWidget().movie().start()
@@ -319,13 +338,17 @@ class QuestionDlg(QDialog):
         if oldbtn == "":
             random.seed()
             self.lstchoices = random.sample(allstudent, nums)
+            for ibtn in self.lstchoices:
+                self.dict_choices[ibtn] = "111"
             QTimer.singleShot(1000, self.stopmovie)
         else:
             random.seed()
             otherbtn = random.sample(allstudent, 1)[0]
             self.btngroup.button(int(otherbtn)).setFocus()
             self.lstchoices.remove(oldbtn)
+            self.dict_choices.pop(oldbtn)
             self.lstchoices.append(otherbtn)
+            self.dict_choices[otherbtn] = '111'
             self.stopmovie()
        
     def stopmovie(self):
@@ -352,7 +375,9 @@ class QuestionDlg(QDialog):
         # print(cur.fetchall())
         cur.close()
 
-    def answerRight(self, value):
+    def answerRight(self):
+        # print(self.g_curbtn)
+        value = self.g_curbtn
         if value not in self.lstchoices:
             return
 
@@ -365,6 +390,7 @@ class QuestionDlg(QDialog):
         cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
         conn.commit()
         
+        ###########
         curmenu = self.btngroup.button(int(value)).menu()
         if not curmenu.actions()[1].isEnabled (): # must delete wrongquestionnums
             cur.execute("select wrongquestions from student where studentsn='" + value + "'")
