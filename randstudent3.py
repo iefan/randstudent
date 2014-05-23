@@ -1,12 +1,26 @@
 from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
 from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QMovie, QLabel
-from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize, QByteArray, QTimer
+from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize, QByteArray, QTimer, QObject
 import random, time, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
         
 conn = sqlite3.connect("student.db") 
+
+class MyButton(QPushButton):
+    def __init__(self, title, parent=None):
+        # QPushButton.__init__(self, parent)
+        super(MyButton, self).__init__(title, parent)
+        self.setText(title)
+        # self.studentsn = studentsn
+
+    def mousePressEvent(self,event):
+        if event.button() == Qt.LeftButton:
+            QPushButton.mousePressEvent(self,event)
+            return
+        print ("!!!!!Processing right click event")
+        self.emit(SIGNAL("myslot(PyQt_PyObject)"), self.text())
 
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
@@ -36,7 +50,7 @@ class QuestionDlg(QDialog):
         w1=QWidget()
         w1.setAccessibleName("w1tab")
         self.w1title = QLabel()
-        self.btn_start = QPushButton("开始")
+        self.btn_start = MyButton("开始")
         self.choicenum_text = QComboBox()
         self.choicenum_text.setObjectName('w1combonums')
         # self.w1title.setStyleSheet("background-image:url('image/panelbg.jpg');")
@@ -110,8 +124,11 @@ class QuestionDlg(QDialog):
         self.connect(self.btn_start2, SIGNAL("clicked()"), self.startChoice)
         # self.connect(self.w2title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
         self.btngroup.buttonClicked[int].connect(self.btns_click)
+        # self.connect(self.btn_start,  SIGNAL("myslot(PyQt_PyObject)"), self.myslot)  
         # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), lambda:self.btns_click())
 
+    def myslot(self, text):  
+        print(text)
     # def on_context_menu(self, point):
     #     print(point)
     #     self.popMenu.exec_(self.button.mapToGlobal(point)) 
@@ -182,6 +199,7 @@ class QuestionDlg(QDialog):
         cur.close()
 
     def mousePressEvent(self, event):
+        # print(event.sender(), event.button())
         self.offset = event.pos()
 
     def mouseMoveEvent(self, event):
@@ -221,11 +239,12 @@ class QuestionDlg(QDialog):
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
 
-            tmpbtn = QPushButton(item[1])
+            tmpbtn = MyButton(item[1])
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
             # tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             tmpbtn.setFlat(True)
+            self.connect(tmpbtn,  SIGNAL("myslot(PyQt_PyObject)"), self.myslot)
             # self.connect(tmpbtn, SIGNAL('customContextMenuRequested(const QPoint&)'), self.on_context_menu)
 
             tmpbtn.setAutoDefault(False)
