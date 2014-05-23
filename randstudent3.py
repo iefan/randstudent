@@ -120,10 +120,21 @@ class QuestionDlg(QDialog):
         # print(self.btngroup.button(btnid).rect())
         # print(self.mapToGlobal(self.btngroup.button(btnid).pos()))
         self.g_curbtn = str(btnid).zfill(4)
+        if self.g_curbtn not in self.dict_choices:
+            return
+
         pos = self.btngroup.button(btnid).mapToGlobal(self.btngroup.button(btnid).pos())
         width = self.btngroup.button(btnid).rect().height()
         # print(pos, width)
         pos.setY(pos.y()+width-5)
+
+        indx = 0
+        for istate in self.dict_choices[self.g_curbtn]:
+            if istate == '1':
+                self.popMenu.actions()[indx].setEnabled(True)
+            elif istate == '0':
+                self.popMenu.actions()[indx].setEnabled(False)
+            indx += 1
         self.popMenu.exec_(pos)
         # print(self.g_curbtn)
 
@@ -154,7 +165,6 @@ class QuestionDlg(QDialog):
         elif curtab == 1:
             strwhere = " and studentsn like '04%' "
 
-        self.lstchoices = []
         self.g_curbtn = ""
         self.dict_choices = {}
 
@@ -168,17 +178,11 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(isn[0])).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
             self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
-            # curmenu = self.btngroup.button(int(isn[0])).menu()
-            # curmenu.actions()[0].setEnabled(True)
-            # curmenu.actions()[1].setEnabled(True)
-            # curmenu.show()
-            # print(curmenu.isVisible())
 
         cur.close()
 
     def mousePressEvent(self, event):
         self.offset = event.pos()
-        # print(self.offset)
 
     def mouseMoveEvent(self, event):
         if hasattr(self, 'offset'):
@@ -283,7 +287,6 @@ class QuestionDlg(QDialog):
         if oldbtn != "":
             flag = str(int(oldbtn[:2]))
         else:
-            self.lstchoices = []
             self.dict_choices = {}
             whichtabpage = self.sender().parentWidget().accessibleName()
             flag = (whichtabpage == "w1tab") and "3" or "4"
@@ -327,27 +330,21 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(isn[0])).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
 
-            # curmenu = self.btngroup.button(int(isn[0])).menu()
-            # curmenu.actions()[0].setEnabled(True)
-            # curmenu.actions()[1].setEnabled(True)
-            
         for istu in self.studentSnlst:
             self.btngroup.button(int(istu[0])).parentWidget().movie().start()
             # print(istu)
         # print(allstudent)
         if oldbtn == "":
             random.seed()
-            self.lstchoices = random.sample(allstudent, nums)
-            for ibtn in self.lstchoices:
+            lstchoices = random.sample(allstudent, nums)
+            for ibtn in lstchoices:
                 self.dict_choices[ibtn] = "111"
             QTimer.singleShot(1000, self.stopmovie)
         else:
             random.seed()
             otherbtn = random.sample(allstudent, 1)[0]
             self.btngroup.button(int(otherbtn)).setFocus()
-            self.lstchoices.remove(oldbtn)
             self.dict_choices.pop(oldbtn)
-            self.lstchoices.append(otherbtn)
             self.dict_choices[otherbtn] = '111'
             self.stopmovie()
        
@@ -356,10 +353,9 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(istu[0])).parentWidget().movie().stop()
             self.btngroup.button(int(istu[0])).parentWidget().movie().jumpToFrame(0)
 
-        # print("~~~~~~~~~", self.lstchoices)
         cur = conn.cursor()
         today = datetime.date.today()
-        for ibtn in self.lstchoices:
+        for ibtn in self.dict_choices:
             # print('1111', ibtn, self.btngroup.button(int(ibtn)))
             # print(self.btngroup.button(int(ibtn)).text())
             self.btngroup.button(int(ibtn)).parentWidget().setStyleSheet("border: 3px solid rgb(255,0,0); color:black; font-size:26px;")
@@ -378,7 +374,7 @@ class QuestionDlg(QDialog):
     def answerRight(self):
         # print(self.g_curbtn)
         value = self.g_curbtn
-        if value not in self.lstchoices:
+        if value not in self.dict_choices:
             return
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/smile.png"))
@@ -391,19 +387,18 @@ class QuestionDlg(QDialog):
         conn.commit()
         
         ###########
-        curmenu = self.btngroup.button(int(value)).menu()
-        if not curmenu.actions()[1].isEnabled (): # must delete wrongquestionnums
+        if self.dict_choices[value] == "101":
             cur.execute("select wrongquestions from student where studentsn='" + value + "'")
             studentWrongQuestions = cur.fetchall()[0][0] - 1
             cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
             conn.commit()
-        curmenu.actions()[0].setEnabled(False)
-        curmenu.actions()[1].setEnabled(True)
-
         cur.close()
 
-    def answerWrong(self, value):
-        if value not in self.lstchoices:
+        self.dict_choices[value] = "011"
+
+    def answerWrong(self):
+        value = self.g_curbtn
+        if value not in self.dict_choices:
             return
 
         self.btngroup.button(int(value)).setIcon(QIcon("image/cry.png"))
@@ -416,19 +411,17 @@ class QuestionDlg(QDialog):
         cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
         conn.commit()
 
-        curmenu = self.btngroup.button(int(value)).menu()
-        if not curmenu.actions()[0].isEnabled (): # must delete wrongquestionnums
+        if self.dict_choices[value] == "011":
             cur.execute("select rightquestions from student where studentsn='" + value + "'")
             studentRightQuestions = cur.fetchall()[0][0] - 1
             cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
             conn.commit()
-        curmenu.actions()[0].setEnabled(True)
-        curmenu.actions()[1].setEnabled(False)
-
         cur.close()
+        self.dict_choices[value] = "101"
 
-    def resetStudent(self, value):
-        if value not in self.lstchoices:
+    def resetStudent(self):
+        value = self.g_curbtn
+        if value not in self.dict_choices:
             return
 
         # self.btngroup.button(int(value)).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
@@ -437,13 +430,12 @@ class QuestionDlg(QDialog):
 
         cur = conn.cursor()
 
-        curmenu = self.btngroup.button(int(value)).menu()
-        if not curmenu.actions()[0].isEnabled():
+        if self.dict_choices[value] == "011":        
             cur.execute("select rightquestions from student where studentsn='" + value + "'")
             studentRightQuestions = cur.fetchall()[0][0] - 1
             cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
             conn.commit()
-        if not curmenu.actions()[1].isEnabled():
+        if self.dict_choices[value] == "101":
             cur.execute("select wrongquestions from student where studentsn='" + value + "'")
             studentWrongQuestions = cur.fetchall()[0][0] - 1
             cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
