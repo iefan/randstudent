@@ -1,7 +1,7 @@
 from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
 from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QMovie, QLabel
-from PyQt4.QtCore import SIGNAL, QThread, pyqtSignal, Qt, QSize, QByteArray, QTimer, QObject
-import random, time, datetime
+from PyQt4.QtCore import SIGNAL, Qt, QSize, QByteArray, QTimer
+import random, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
@@ -13,14 +13,21 @@ class MyButton(QPushButton):
         # QPushButton.__init__(self, parent)
         super(MyButton, self).__init__(title, parent)
         self.setText(title)
+        self._item = "1"
         # self.studentsn = studentsn
+
+    def setMyarg(self, item):
+        self._item = item
+
+    def getMyarg(self):
+        return self._item
 
     def mousePressEvent(self,event):
         if event.button() == Qt.LeftButton:
             QPushButton.mousePressEvent(self,event)
             return
-        print ("!!!!!Processing right click event")
-        self.emit(SIGNAL("myslot(PyQt_PyObject)"), self.text())
+        # print ("!!!!!Processing right click event")
+        self.emit(SIGNAL("myslot(PyQt_PyObject)"), self._item)
 
 class QuestionDlg(QDialog):
     def __init__(self,parent=None):
@@ -98,12 +105,12 @@ class QuestionDlg(QDialog):
         btnMinimized.setGeometry(690, 5, 20, 20)
         btnMinimized.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
-        btnSysMenu = QPushButton(self)
-        # btnSysMenu.setText("▼")
-        btnSysMenu.setGeometry(665, 5, 20, 20)
-        btnSysMenu.setToolTip("系统设置")
-        btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
-        btnSysMenu.clicked.connect(lambda: self.showMinimized())
+        self.btnSysMenu = QPushButton(self)
+        # self.btnSysMenu.setText("▼")
+        self.btnSysMenu.setGeometry(665, 5, 20, 20)
+        self.btnSysMenu.setToolTip("系统设置")
+        self.btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
+        self.btnSysMenu.clicked.connect(lambda: self.showMinimized())
         menufont = QFont("宋体", 12)
         popMenu = QMenu(self)
         entry1 = popMenu.addAction("初始化")
@@ -112,12 +119,15 @@ class QuestionDlg(QDialog):
         entry2 = popMenu.addAction("清除提问人员")
         entry2.setFont(menufont)
         self.connect(entry2,SIGNAL('triggered()'), self.deleteTmpdata)
-        btnSysMenu.setMenu(popMenu)
-        btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;}")
+        self.btnSysMenu.setMenu(popMenu)
+        self.btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;}")
 
         self.setWindowTitle("课堂随机提问")
         self.setWindowIcon(QIcon("image/start.ico"))
         self.setGeometry(100, 20, 740, 700)
+
+        self.btn_start.setMyarg('start')
+        # print(self.btn_start.getMyarg())
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
         # self.connect(self.w1title, SIGNAL("currentIndexChanged(int)"), self.changeTitle)
@@ -128,20 +138,14 @@ class QuestionDlg(QDialog):
         # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), lambda:self.btns_click())
 
     def myslot(self, text):  
-        print(text)
-    # def on_context_menu(self, point):
-    #     print(point)
-    #     self.popMenu.exec_(self.button.mapToGlobal(point)) 
-
-    def btns_click(self, btnid):
-        # print(self.btngroup.button(btnid).rect())
-        # print(self.mapToGlobal(self.btngroup.button(btnid).pos()))
-        self.g_curbtn = str(btnid).zfill(4)
+        # print(text)
+        self.g_curbtn = text
         if self.g_curbtn not in self.dict_choices:
+            self.btnSysMenu.setFocus()
             return
 
-        pos = self.btngroup.button(btnid).mapToGlobal(self.btngroup.button(btnid).pos())
-        width = self.btngroup.button(btnid).rect().height()
+        pos = self.btngroup.button(int(self.g_curbtn)).mapToGlobal(self.btngroup.button(int(self.g_curbtn)).pos())
+        width = self.btngroup.button(int(self.g_curbtn)).rect().height()
         # print(pos, width)
         pos.setY(pos.y()+width-5)
 
@@ -153,12 +157,40 @@ class QuestionDlg(QDialog):
                 self.popMenu.actions()[indx].setEnabled(False)
             indx += 1
         self.popMenu.exec_(pos)
-        # print(self.g_curbtn)
+        self.btnSysMenu.setFocus()
+    # def on_context_menu(self, point):
+    #     print(point)
+    #     self.popMenu.exec_(self.button.mapToGlobal(point)) 
 
-        # self.popMenu.show()
-        # print(btnid)
+    def btns_click(self, btnid):
+        # print(self.btngroup.button(btnid).rect())
+        # print(self.mapToGlobal(self.btngroup.button(btnid).pos()))
+        cur = conn.cursor()
+        today = datetime.date.today()
+        self.g_curbtn = str(btnid).zfill(4)
+        if self.g_curbtn not in self.dict_choices:
+            self.btngroup.button(int(self.g_curbtn)).parentWidget().setStyleSheet("border: 3px solid rgb(255,0,0); color:black; font-size:26px;")
+            self.btngroup.button(int(self.g_curbtn)).setStyleSheet("border: 1px solid rgba(255,255,255,0);color:black; font-size:26px;")
+            self.btngroup.button(int(self.g_curbtn)).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
+            cur.execute("select count(*) from tmprecord where studentsn='" + str(self.g_curbtn) + "'")
+            if cur.fetchall()[0][0] == 0:
+                strsql = "insert into tmprecord values (?, ?, ?)"
+                cur.execute(strsql, (None, self.g_curbtn, today))
+                conn.commit()
+            self.dict_choices[self.g_curbtn] = "111"
+        else:
+            self.btngroup.button(int(self.g_curbtn)).parentWidget().setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(self.g_curbtn)).setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            self.btngroup.button(int(self.g_curbtn)).setStyleSheet("QPushButton::menu-indicator {image:None; width:1px;}")
+            self.btngroup.button(int(self.g_curbtn)).setIcon(QIcon())
+            # cur.execute("select count(*) from tmprecord where studentsn='" + str(self.g_curbtn) + "'")
+            # print(cur.fetchall())
+            cur.execute("delete from tmprecord where studentsn='"+ str(self.g_curbtn) + "'")
+            conn.commit()
+            self.dict_choices.pop(self.g_curbtn)
+        self.btnSysMenu.setFocus()
+        cur.close()
 
-        # q = QTimer()
     def initStudent(self):
         cur = conn.cursor()
         cur.execute("update student set wrongquestions=0")
@@ -199,8 +231,12 @@ class QuestionDlg(QDialog):
         cur.close()
 
     def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            QDialog.mousePressEvent(self,event)
+            return
         # print(event.sender(), event.button())
         self.offset = event.pos()
+        # print(self.offset)
 
     def mouseMoveEvent(self, event):
         if hasattr(self, 'offset'):
@@ -240,6 +276,7 @@ class QuestionDlg(QDialog):
             btnlayout.setRowMinimumHeight(irow, 80)
 
             tmpbtn = MyButton(item[1])
+            tmpbtn.setMyarg(item[0])
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
             # tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
@@ -362,11 +399,12 @@ class QuestionDlg(QDialog):
         else:
             random.seed()
             otherbtn = random.sample(allstudent, 1)[0]
-            self.btngroup.button(int(otherbtn)).setFocus()
+            # self.btngroup.button(int(otherbtn)).setFocus()
             self.dict_choices.pop(oldbtn)
             self.dict_choices[otherbtn] = '111'
             self.stopmovie()
-       
+        self.btnSysMenu.setFocus()
+
     def stopmovie(self):
         for istu in self.studentSnlst:
             self.btngroup.button(int(istu[0])).parentWidget().movie().stop()
