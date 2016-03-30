@@ -8,7 +8,14 @@ import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
 
-        
+g_cols = 7   
+
+db = QSqlDatabase.addDatabase("QSQLITE");  
+db.setDatabaseName("studentNew.db")
+if not db.open():
+    QMessageBox.warning(None, "错误",  "数据库连接失败: %s" % db.lastError().text())
+    sys.exit(1)
+
 conn = sqlite3.connect("studentNew.db") 
 stylesheetstr_old = "border: 1px solid rgb(60,200,255,200);color:rgba(0,0,0,80);\
                 background-color: rgba(255,255,255,60);\
@@ -82,10 +89,10 @@ class QuestionDlg(QDialog):
         # self.setWindowFlags(Qt.FramelessWindowHint)
         self.setStyleSheet("background-color: rgba(132, 171, 208, 200);")
 
-        tabWidget=QTabWidget(self)
-        tabWidget.currentChanged.connect(self.changeTab)
+        self.tabWidget=QTabWidget(self)
+        # self.tabWidget.currentChanged.connect(self.changeTab)
         # tabWidget.setTabShape(QTabWidget.Triangular)
-        tabWidget.setStyleSheet("QTabWidget::pane{border-width:1px;border-color:rgb(48, 104, 151);\
+        self.tabWidget.setStyleSheet("QTabWidget::pane{border-width:1px;border-color:rgb(48, 104, 151);\
             border-style: outset;background-color: rgb(132, 171, 208);\
             background: transparent;} \
             QTabWidget::tab-bar{border-width:0px;}\
@@ -126,11 +133,6 @@ class QuestionDlg(QDialog):
         self.w2title = QLabel()
         titleLayout2, btnlayout2, bottomlayout2 = self.genTwoTab(tabtitle = self.w2title)
 
-        # self.w2title = QLabel()
-        # self.btn_start2 = QPushButton("开始")
-        # self.choicenum_text2 = QComboBox()
-        # self.choicenum_text2.setObjectName('w2combonums')
-        # titleLayout2, btnlayout2, bottomlayout2 = self.genOneTab(tabtitle = self.w2title, tabbtn=self.btn_start2, tabnums=self.choicenum_text2, strwhere = "where classid like '04%' ")
         tab2layout = QVBoxLayout()
         tab2layout.addLayout(titleLayout2)       
         tab2layout.addLayout(btnlayout2)
@@ -138,9 +140,10 @@ class QuestionDlg(QDialog):
         w2.setLayout(tab2layout)
         w2.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
 
-        tabWidget.addTab(w1,"三（3）班")
-        tabWidget.addTab(w2,"班级学生信息管理")
-        tabWidget.resize(740,700)
+        self.tabWidget.addTab(w1,"三（3）班")
+        self.tabWidget.addTab(w2,"班级学生信息管理")
+        self.tabWidget.resize(740,700)
+        # print(tabWidget.tabText(0))
         # print(tabWidget.parentWidget())
         btnclose = QPushButton(self)
         btnclose.setToolTip("关闭")
@@ -171,7 +174,7 @@ class QuestionDlg(QDialog):
         self.btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;} ")
         # self.btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255);")
 
-        authorinfo = QLabel(tabWidget)
+        authorinfo = QLabel(self.tabWidget)
         # authorinfo.setToolTip("关闭")
         authorinfo.setText("汕头市大华一小：赵小娜")
         authorinfo.setGeometry(20, 665, 235, 26)
@@ -180,6 +183,8 @@ class QuestionDlg(QDialog):
         self.setWindowTitle("课堂随机提问")
         self.setWindowIcon(QIcon("image/start.ico"))
         self.setGeometry(100, 20, 740, 700)
+
+        self.changeTab()
 
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
@@ -265,31 +270,33 @@ class QuestionDlg(QDialog):
         conn.commit()
         cur.close()
 
-    def changeTab(self, curtab):
-        pass
+    def changeTab(self):
+        # pass
         # if curtab == 0:
         #     strwhere = " and classid like '03%' "
         # elif curtab == 1:
         #     strwhere = " and classid like '04%' "
 
-        # self.g_curbtn = ""
-        # self.dict_choices = {}
+        strwhere = " and classname like '" + self.tabWidget.tabText(0) + "'"
 
-        # cur = conn.cursor()
-        # cur.execute("delete from tmprecord where 1=1")
-        # conn.commit()
-        # cur.execute("select stusn from student where 1=1 " + strwhere)
-        # self.studentSnlst = cur.fetchall()
+        self.g_curbtn = ""
+        self.dict_choices = {}
 
-        # for isn in self.studentSnlst:
-        #     self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
-        #     self.btngroup.button(int(isn[0])).setIcon(QIcon())
+        cur = conn.cursor()
+        cur.execute("delete from tmprecord where 1=1")
+        conn.commit()
+        cur.execute("select stusn from student where 1=1 " + strwhere)
+        self.studentSnlst = cur.fetchall()
 
-        # # print(self.studentSnlst)
-        # self.group_animation = groupAnimation(self.studentSnlst, self.btngroup)
-        # # print(self.group_animation)
+        for isn in self.studentSnlst:
+            self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
+            self.btngroup.button(int(isn[0])).setIcon(QIcon())
 
-        # cur.close()
+        # print(self.studentSnlst)
+        self.group_animation = groupAnimation(self.studentSnlst, self.btngroup)
+        # print(self.group_animation)
+
+        cur.close()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.RightButton:
@@ -309,6 +316,35 @@ class QuestionDlg(QDialog):
         else:
             pass
 
+    #######======= studentModel ============###############
+    def newStudent(self):
+        row = self.StudentModel.rowCount()
+        self.StudentModel.insertRow(row)
+        self.StudentView.scrollToBottom()
+        self.StudentModel.setData(self.StudentModel.index(row, 1), "三（3）班")
+
+    def removeStudent(self):
+        index = self.StudentView.currentIndex()
+        row = index.row()             
+        if QMessageBox.question(self, "删除确认", "是否要删除当前选中记录？", "确定", "取消") == 0:
+            self.StudentModel.removeRows(row, 1)
+            self.StudentModel.submitAll()
+            self.StudentModel.database().commit()
+
+    def revertStudent(self):
+        self.StudentModel.revertAll()
+        self.StudentModel.database().rollback()
+
+    def saveStudent(self):
+        self.StudentModel.database().transaction()
+        if self.StudentModel.submitAll():
+            self.StudentModel.database().commit()
+            # print("save success!  ->commit")
+        else:
+            self.StudentModel.revertAll()
+            self.StudentModel.database().rollback()
+
+    #######======= classModel ============###############
     def newClass(self):
         row = self.ClassnameModel.rowCount()
         self.ClassnameModel.insertRow(row)
@@ -361,14 +397,8 @@ class QuestionDlg(QDialog):
         titleLayout.addWidget(tabtitle)
         titleLayout.setAlignment(tabtitle, Qt.AlignCenter)
 
-        # lstlayout = QHBoxLayout()
-
-        self.db = QSqlDatabase.addDatabase("QSQLITE");  
-        self.db.setDatabaseName("studentNew.db")
-        if not self.db.open():
-            QMessageBox.warning(None, "错误",  "数据库连接失败: %s" % self.db.lastError().text())
-            sys.exit(1)
-
+       
+        # Create the classnameView
         self.ClassnameView = QTableView()
         self.ClassnameModel = QSqlTableModel(self.ClassnameView)
         self.ClassnameModel.setTable("classtable")
@@ -435,6 +465,10 @@ class QuestionDlg(QDialog):
         btnbox2.addButton(revertbtn2, QDialogButtonBox.ActionRole);
         btnbox2.addButton(removebtn2, QDialogButtonBox.ActionRole);
 
+        newusrbtn2.clicked.connect(self.newStudent)
+        savebtn2.clicked.connect(self.saveStudent)
+        revertbtn2.clicked.connect(self.revertStudent)
+        removebtn2.clicked.connect(self.removeStudent)
 
         # left list layout
         lst_layout_1 = QVBoxLayout()
@@ -509,8 +543,8 @@ class QuestionDlg(QDialog):
      
         tmpnum = 0
         for item in cur.fetchall():
-            irow = tmpnum // 7
-            icol = tmpnum % 7
+            irow = tmpnum // g_cols
+            icol = tmpnum % g_cols
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
 
@@ -518,7 +552,8 @@ class QuestionDlg(QDialog):
             tmpbtn.setMyarg(item[0])
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
-            # tmpbtn.setStyleSheet("border: 1px solid rgb(255,255,255,0);background-color: rgba(255,255,255,20);font-size:16px;")
+            tmpbtn.setStyleSheet("border: 1px solid rgb(55,55,255,100);background-color: rgba(255,255,255,20);font-size:16px;")
+            # tmpbtn.setStyleSheet("font-size:16px;")
             # tmpbtn.setFlat(True)
             self.connect(tmpbtn,  SIGNAL("myslot(PyQt_PyObject)"), self.myslot)
             # self.connect(tmpbtn, SIGNAL('customContextMenuRequested(const QPoint&)'), self.on_context_menu)
@@ -532,7 +567,7 @@ class QuestionDlg(QDialog):
         tabbtn.setStyleSheet("border: 1px solid yellow;")
         tabbtn.setFixedHeight(40)
         tabbtn.setFixedWidth(100)
-        tabbtn.setFont(QFont('宋体', 20))
+        tabbtn.setFont(QFont('宋体', 18))
         # tabnums.setFixedHeight(45)
         # tabnums.setFixedWidth(60)
         tabnums.setFont(QFont('Courier New', 20))
@@ -570,38 +605,42 @@ class QuestionDlg(QDialog):
             flag = str(int(oldbtn[:2]))
         else:
             self.dict_choices = {}
-            whichtabpage = self.sender().parentWidget().accessibleName()
-            flag = (whichtabpage == "w1tab") and "3" or "4"
+        #     whichtabpage = self.sender().parentWidget().accessibleName()
+        #     flag = (whichtabpage == "w1tab") and "3" or "4"
             
-        if flag== "3":
-            strwhere = " and studentsn like '03%' "
-            tabCombonums = self.findChild(QComboBox, 'w1combonums')
-        else:
-            strwhere = " and studentsn like '04%' "
-            tabCombonums = self.findChild(QComboBox, 'w2combonums')
+        # if flag== "3":
+        #     strwhere = " and studentsn like '03%' "
+        #     tabCombonums = self.findChild(QComboBox, 'w1combonums')
+        # else:
+        #     strwhere = " and studentsn like '04%' "
+        #     tabCombonums = self.findChild(QComboBox, 'w2combonums')
+
+        # tabCombonums = self.choicenum_text.currentText()
 
         # print(usernum, oldbtn)
+
+        strwhere = " and classname like '" + self.tabWidget.tabText(0) + "'"
 
         allstudent = []
         lstrecord = ['0000', '1111']
         cur = conn.cursor()   
-        cur.execute("select studentsn from tmprecord where 1=1 " + strwhere)  
+        cur.execute("select stusn from tmprecord where 1=1 " + strwhere)  
         for item in cur.fetchall():
             lstrecord.append(item[0])
-        # print(lstrecord, 'record', "select studentsn from student where studentsn like '03%' and studentsn not in " + str(tuple(lstrecord)))
-        cur.execute("select studentsn from student where studentsn not in " + str(tuple(lstrecord)) + strwhere)
+        # print(lstrecord, 'record', "select stusn from student where stusn like '03%' and stusn not in " + str(tuple(lstrecord)))
+        cur.execute("select stusn from student where stusn not in " + str(tuple(lstrecord)) + strwhere)
         for item in cur.fetchall():
             allstudent.append(item[0])
 
         if usernum == "":
-            nums = int(tabCombonums.currentText())
+            nums = int(self.choicenum_text.currentText())
         else:
             nums = usernum
         if nums >= len(allstudent):
             cur.execute("delete from tmprecord where 1=1 " + strwhere) #delete tmp date no today
             conn.commit()
             allstudent = []
-            cur.execute("select studentsn from student where 1=1 " + strwhere)
+            cur.execute("select stusn from student where 1=1 " + strwhere)
             for item in cur.fetchall():
                 allstudent.append(item[0])
         # print(tabCombonums.currentText())
@@ -629,15 +668,16 @@ class QuestionDlg(QDialog):
         for isn in self.studentSnlst:
             self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
-    
+        
+        classname = self.tabWidget.tabText(0)
         cur = conn.cursor()
         today = datetime.date.today()
         for ibtn in self.dict_choices:
             self.btngroup.button(int(ibtn)).setStyleSheet(stylesheetstr_new)
-            cur.execute("select count(*) from tmprecord where studentsn='" + str(ibtn) + "'")
+            cur.execute("select count(*) from tmprecord where stusn='" + str(ibtn) + "'")
             if cur.fetchall()[0][0] == 0:
-                strsql = "insert into tmprecord values (?, ?, ?)"
-                cur.execute(strsql, (None, ibtn, today))
+                strsql = "insert into tmprecord values (?, ?, ?, ?)"
+                cur.execute(strsql, (None, classname, ibtn, today))
                 conn.commit()
 
         # cur.execute("select * from tmprecord")
@@ -654,16 +694,16 @@ class QuestionDlg(QDialog):
         self.btngroup.button(int(value)).setIconSize(QSize(20,20))
 
         cur = conn.cursor()
-        cur.execute("select rightquestions from student where studentsn='" + value + "'")
+        cur.execute("select rightquestions from student where stusn='" + value + "'")
         studentRightQuestions = cur.fetchall()[0][0] + 1
-        cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+        cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where stusn='" + value + "'")
         conn.commit()
         
         ###########
         if self.dict_choices[value] == "101":
-            cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+            cur.execute("select wrongquestions from student where stusn='" + value + "'")
             studentWrongQuestions = cur.fetchall()[0][0] - 1
-            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where stusn='" + value + "'")
             conn.commit()
         cur.close()
 
@@ -679,15 +719,15 @@ class QuestionDlg(QDialog):
         # self.btngroup.button(int(value)).setStyleSheet("border-image: url(image/ex_stu.png);")
 
         cur = conn.cursor()
-        cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+        cur.execute("select wrongquestions from student where stusn='" + value + "'")
         studentWrongQuestions = cur.fetchall()[0][0] + 1
-        cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+        cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where stusn='" + value + "'")
         conn.commit()
 
         if self.dict_choices[value] == "011":
-            cur.execute("select rightquestions from student where studentsn='" + value + "'")
+            cur.execute("select rightquestions from student where stusn='" + value + "'")
             studentRightQuestions = cur.fetchall()[0][0] - 1
-            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where stusn='" + value + "'")
             conn.commit()
         cur.close()
         self.dict_choices[value] = "101"
@@ -704,14 +744,14 @@ class QuestionDlg(QDialog):
         cur = conn.cursor()
 
         if self.dict_choices[value] == "011":        
-            cur.execute("select rightquestions from student where studentsn='" + value + "'")
+            cur.execute("select rightquestions from student where stusn='" + value + "'")
             studentRightQuestions = cur.fetchall()[0][0] - 1
-            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where studentsn='" + value + "'")
+            cur.execute("update student set rightquestions=" + str(studentRightQuestions) + " where stusn='" + value + "'")
             conn.commit()
         if self.dict_choices[value] == "101":
-            cur.execute("select wrongquestions from student where studentsn='" + value + "'")
+            cur.execute("select wrongquestions from student where stusn='" + value + "'")
             studentWrongQuestions = cur.fetchall()[0][0] - 1
-            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where studentsn='" + value + "'")
+            cur.execute("update student set wrongquestions=" + str(studentWrongQuestions) + " where stusn='" + value + "'")
             conn.commit()
         cur.close()
 
@@ -734,7 +774,7 @@ class QuestionDlg(QDialog):
         # print(sqlstr)
 
         sqlstr2 = 'create table tmprecord (id integer primary key, \
-            classid varchar(20), \
+            classname varchar(20), \
             stusn varchar(20), \
             datequestion date)'
 
