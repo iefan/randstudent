@@ -8,13 +8,7 @@ import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
 
-g_cols = 7   
-
-db = QSqlDatabase.addDatabase("QSQLITE");  
-db.setDatabaseName("studentNew.db")
-if not db.open():
-    QMessageBox.warning(None, "错误",  "数据库连接失败: %s" % db.lastError().text())
-    sys.exit(1)
+g_cols = 8   
 
 conn = sqlite3.connect("studentNew.db") 
 stylesheetstr_old = "border: 1px solid rgb(60,200,255,200);color:rgba(0,0,0,80);\
@@ -30,6 +24,7 @@ def groupAnimation(ws, btngroup):
     # 建立一个平行的动作组
     ag = QParallelAnimationGroup()
     for w in ws:
+        # print(w)
         tmpbtn = btngroup.button(int(w[0]))
         # 对于每个按钮, 都生成一个进入的动作
         a = QPropertyAnimation(tmpbtn, "alpha")
@@ -84,13 +79,21 @@ class QuestionDlg(QDialog):
         # self.createDb()
         # return
 
+        self.db = QSqlDatabase.addDatabase("QSQLITE");  
+        self.db.setDatabaseName("studentNew.db")
+        if not self.db.open():
+            QMessageBox.warning(None, "错误",  "数据库连接失败: %s" % self.db.lastError().text())
+            sys.exit(1)
+
+        self.g_curClassName = ""
+
         self.setWindowFlags(Qt.CustomizeWindowHint)
         # self.setStyleSheet("border: 2px; border-radius 2px;")
         # self.setWindowFlags(Qt.FramelessWindowHint)
         self.setStyleSheet("background-color: rgba(132, 171, 208, 200);")
 
         self.tabWidget=QTabWidget(self)
-        # self.tabWidget.currentChanged.connect(self.changeTab)
+        self.tabWidget.currentChanged.connect(self.changeTab)
         # tabWidget.setTabShape(QTabWidget.Triangular)
         self.tabWidget.setStyleSheet("QTabWidget::pane{border-width:1px;border-color:rgb(48, 104, 151);\
             border-style: outset;background-color: rgb(132, 171, 208);\
@@ -109,29 +112,29 @@ class QuestionDlg(QDialog):
         entry3 = self.popMenu.addAction("替换")
         self.connect(entry3,SIGNAL('triggered()'), lambda : self.resetStudent())
 
-        w1=QWidget()
-        w1.setAccessibleName("w1tab")
-        self.w1title = QLabel()
+        self.w1=QWidget()
+        self.w1.setAccessibleName("w1tab")
+        # self.w1title = QLabel()
         self.btn_start = MyButton("开始")
         self.choicenum_text = QComboBox()
         self.choicenum_text.setObjectName('w1combonums')
         # self.w1title.setStyleSheet("background-image:url('image/panelbg.jpg');")
         
 
-        titleLayout, btnlayout, bottomlayout = self.genOneTab(tabtitle = self.w1title, tabbtn=self.btn_start, tabnums=self.choicenum_text)
+        titleLayout, btnlayout, bottomlayout = self.genOneTab(tabtitle = QLabel(), tabbtn=self.btn_start, tabnums=self.choicenum_text)
 
         tab1layout = QVBoxLayout()
         tab1layout.addLayout(titleLayout)       
         tab1layout.addLayout(btnlayout)
         tab1layout.addLayout(bottomlayout)
                 
-        w1.setLayout(tab1layout)
-        w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
+        self.w1.setLayout(tab1layout)
+        self.w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
 
         w2=QWidget()
         w2.setAccessibleName("w2tab")
-        self.w2title = QLabel()
-        titleLayout2, btnlayout2, bottomlayout2 = self.genTwoTab(tabtitle = self.w2title)
+        # self.w2title = QLabel()
+        titleLayout2, btnlayout2, bottomlayout2 = self.genTwoTab(tabtitle = QLabel())
 
         tab2layout = QVBoxLayout()
         tab2layout.addLayout(titleLayout2)       
@@ -140,26 +143,26 @@ class QuestionDlg(QDialog):
         w2.setLayout(tab2layout)
         w2.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
 
-        self.tabWidget.addTab(w1,"三（3）班")
+        self.tabWidget.addTab(self.w1,"")
         self.tabWidget.addTab(w2,"班级学生信息管理")
-        self.tabWidget.resize(740,700)
+        self.tabWidget.resize(940,700)
         # print(tabWidget.tabText(0))
         # print(tabWidget.parentWidget())
         btnclose = QPushButton(self)
         btnclose.setToolTip("关闭")
         btnclose.setText("╳")
-        btnclose.setGeometry(715, 5, 20, 20)
+        btnclose.setGeometry(915, 5, 20, 20)
         btnclose.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnclose.clicked.connect(self.close)
         btnMinimized = QPushButton(self)
         btnMinimized.setToolTip("最小化")
         btnMinimized.setText("▁")
-        btnMinimized.setGeometry(690, 5, 20, 20)
+        btnMinimized.setGeometry(890, 5, 20, 20)
         btnMinimized.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255)")
         btnMinimized.clicked.connect(lambda: self.showMinimized())
         self.btnSysMenu = QPushButton(self)
         # self.btnSysMenu.setText("▼")
-        self.btnSysMenu.setGeometry(665, 5, 20, 20)
+        self.btnSysMenu.setGeometry(865, 5, 20, 20)
         self.btnSysMenu.setToolTip("系统设置")
         self.btnSysMenu.clicked.connect(lambda: self.showMinimized())
         menufont = QFont("宋体", 10)
@@ -182,9 +185,9 @@ class QuestionDlg(QDialog):
 
         self.setWindowTitle("课堂随机提问")
         self.setWindowIcon(QIcon("image/start.ico"))
-        self.setGeometry(100, 20, 740, 700)
+        self.setGeometry(100, 20, 940, 700)
 
-        self.changeTab()
+        # self.changeTab()
 
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
@@ -231,23 +234,25 @@ class QuestionDlg(QDialog):
     def btns_click(self, btnid):
         # print(self.btngroup.button(btnid).rect())
         # print(self.mapToGlobal(self.btngroup.button(btnid).pos()))
+        curclassname = self.tabWidget.tabText(0)
+
         cur = conn.cursor()
         today = datetime.date.today()
         self.g_curbtn = str(btnid).zfill(4)
         if self.g_curbtn not in self.dict_choices:
             self.btngroup.button(int(self.g_curbtn)).setStyleSheet(stylesheetstr_new)
-            cur.execute("select count(*) from tmprecord where studentsn='" + str(self.g_curbtn) + "'")
+            cur.execute("select count(*) from tmprecord where stusn='" + str(self.g_curbtn) + "'")
             if cur.fetchall()[0][0] == 0:
-                strsql = "insert into tmprecord values (?, ?, ?)"
-                cur.execute(strsql, (None, self.g_curbtn, today))
+                strsql = "insert into tmprecord values (?, ?, ?, ?)"
+                cur.execute(strsql, (None, curclassname, self.g_curbtn, today))
                 conn.commit()
             self.dict_choices[self.g_curbtn] = "111"
         else:
             self.btngroup.button(int(self.g_curbtn)).setStyleSheet(stylesheetstr_old)
             self.btngroup.button(int(self.g_curbtn)).setIcon(QIcon())
-            # cur.execute("select count(*) from tmprecord where studentsn='" + str(self.g_curbtn) + "'")
+            # cur.execute("select count(*) from tmprecord where stusn='" + str(self.g_curbtn) + "'")
             # print(cur.fetchall())
-            cur.execute("delete from tmprecord where studentsn='"+ str(self.g_curbtn) + "'")
+            cur.execute("delete from tmprecord where stusn='"+ str(self.g_curbtn) + "'")
             conn.commit()
             self.dict_choices.pop(self.g_curbtn)
         self.btnSysMenu.setFocus()
@@ -270,29 +275,62 @@ class QuestionDlg(QDialog):
         conn.commit()
         cur.close()
 
+    # def createFirstTab(self):
+    #     titleLayout, btnlayout, bottomlayout = self.genOneTab(tabtitle = QLabel(), tabbtn=self.btn_start, tabnums=self.choicenum_text)
+
+    #     tab1layout = QVBoxLayout()
+    #     tab1layout.addLayout(titleLayout)       
+    #     tab1layout.addLayout(btnlayout)
+    #     tab1layout.addLayout(bottomlayout)
+
+    #     self.w1.setLayout(tab1layout)
+
     def changeTab(self):
         # pass
-        # if curtab == 0:
-        #     strwhere = " and classid like '03%' "
-        # elif curtab == 1:
-        #     strwhere = " and classid like '04%' "
+        curtab = self.tabWidget.currentIndex()
+        # print(curtab, "-")
+        if curtab == 1: 
+            return
+            
+        cur = conn.cursor()
 
+        ## if current classname is null, then set current tabpage display the first class of classtable
+        if self.g_curClassName == "":
+            cur.execute("select classname from classtable")
+            self.g_curClassName = cur.fetchall()[0][0]
+        # print(curclassname)
+
+        self.tabWidget.setTabText(0, self.g_curClassName)
+        # print(1)
         strwhere = " and classname like '" + self.tabWidget.tabText(0) + "'"
 
         self.g_curbtn = ""
         self.dict_choices = {}
+        self.studentSnlst = []
 
-        cur = conn.cursor()
+        ## clearn the question data of temp record .
         cur.execute("delete from tmprecord where 1=1")
         conn.commit()
-        cur.execute("select stusn from student where 1=1 " + strwhere)
-        self.studentSnlst = cur.fetchall()
+        cur.execute("select stusn, stuname from student where 1=1 " + strwhere)
+        # result = cur.fetchall()
 
-        for isn in self.studentSnlst:
-            self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
-            self.btngroup.button(int(isn[0])).setIcon(QIcon())
+        ## now update the global data "self.btngroup"
+        for indx in range(0, 56):
+            self.btngroup.button(indx+1).setEnabled(False)
+            self.studentSnlst.append([indx+1,])
 
-        # print(self.studentSnlst)
+        inum = 0
+        for item in cur.fetchall():
+            inum += 1
+            # print(item[0],item[1])
+            self.btngroup.button(inum).setText(item[1])
+            self.btngroup.button(inum).setMyarg(item[0])       
+            self.btngroup.button(inum).setStyleSheet(stylesheetstr_old)
+            self.btngroup.button(inum).setIcon(QIcon())
+            self.btngroup.button(inum).setEnabled(True)
+
+        # print(inum, len(self.btngroup.buttons()))
+
         self.group_animation = groupAnimation(self.studentSnlst, self.btngroup)
         # print(self.group_animation)
 
@@ -523,6 +561,7 @@ class QuestionDlg(QDialog):
     def genOneTab(self, tabtitle="", tabbtn="", tabnums="", strwhere = "where classname like '三（3）班' "):
         # tabtitle.setFixedHeight(40)
         # tabtitle.setFixedWidth(160)
+        # Set the title style
         tabtitle.setFont(QFont('Courier New', 20))
         tabtitle.setText("随堂提问演板")
         tabtitle.setStyleSheet("border: 1px solid blue; color:rgba(0,0,255, 220);\
@@ -537,31 +576,29 @@ class QuestionDlg(QDialog):
        
         btnlayout = QGridLayout()
         
-        cur = conn.cursor()
-        strsql = "select stusn, stuname from student " + strwhere
-        cur.execute(strsql)
+        # cur = conn.cursor()
+        # strsql = "select stusn, stuname from student " + strwhere
+        # cur.execute(strsql)
      
+        print(self.btngroup, len(self.btngroup.buttons()))
+
         tmpnum = 0
-        for item in cur.fetchall():
+        for inum in range(0,56):
             irow = tmpnum // g_cols
             icol = tmpnum % g_cols
             tmpnum += 1
             btnlayout.setRowMinimumHeight(irow, 80)
-
-            tmpbtn = MyButton(item[1])
-            tmpbtn.setMyarg(item[0])
+            tmpbtn = MyButton("")
+            tmpbtn.setMyarg(None)
             # tmpbtn.setFixedHeight(20)
             tmpbtn.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding))
             tmpbtn.setStyleSheet("border: 1px solid rgb(55,55,255,100);background-color: rgba(255,255,255,20);font-size:16px;")
-            # tmpbtn.setStyleSheet("font-size:16px;")
-            # tmpbtn.setFlat(True)
             self.connect(tmpbtn,  SIGNAL("myslot(PyQt_PyObject)"), self.myslot)
-            # self.connect(tmpbtn, SIGNAL('customContextMenuRequested(const QPoint&)'), self.on_context_menu)
-
             tmpbtn.setAutoDefault(False)
-            self.btngroup.addButton(tmpbtn, int(item[0]))
+            self.btngroup.addButton(tmpbtn, inum+1) # stusn is from 1 start
 
             btnlayout.addWidget(tmpbtn, irow, icol)
+
 
         tabbtn.setIcon(QIcon("image/start.png"))
         tabbtn.setStyleSheet("border: 1px solid yellow;")
@@ -570,6 +607,8 @@ class QuestionDlg(QDialog):
         tabbtn.setFont(QFont('宋体', 18))
         # tabnums.setFixedHeight(45)
         # tabnums.setFixedWidth(60)
+
+        ## Set the combox number style
         tabnums.setFont(QFont('Courier New', 20))
         tabnums.setFixedHeight(45)
         tabnums.setStyleSheet("border: 2px solid blue; color:red;font-weight:light;font-size:26px;\
@@ -597,7 +636,7 @@ class QuestionDlg(QDialog):
         bottomlayout.setSpacing(5)
         bottomlayout.addWidget(tabnums)
      
-        cur.close()
+        # cur.close()
         return(titleLayout, btnlayout, bottomlayout)
     
     def startChoice(self, usernum="", oldbtn=""): 
@@ -666,6 +705,7 @@ class QuestionDlg(QDialog):
     def stopmovie(self):
         self.group_animation.stop()
         for isn in self.studentSnlst:
+            print(isn)
             self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
         
