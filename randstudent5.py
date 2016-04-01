@@ -54,7 +54,9 @@ class MyButton(QPushButton):
         return self._item
 
     def mousePressEvent(self,event):
+        # print(1)
         if event.button() == Qt.LeftButton:
+            # print(2)
             QPushButton.mousePressEvent(self,event)
             return
         # print ("!!!!!Processing right click event")
@@ -85,6 +87,7 @@ class QuestionDlg(QDialog):
             sys.exit(1)
 
         self.g_curClassName = ""
+        self.deleteTmpdata()
 
         self.setWindowFlags(Qt.CustomizeWindowHint)
         # self.setStyleSheet("border: 2px; border-radius 2px;")
@@ -172,6 +175,7 @@ class QuestionDlg(QDialog):
         self.move((screen.width()-size.width())/2, (screen.height()-size.height())/2)
 
         self.btn_start.setMyarg('start')
+        
         # print(self.btn_start.getMyarg())
 
         self.connect(self.btn_start, SIGNAL("clicked()"), self.startChoice)
@@ -183,7 +187,7 @@ class QuestionDlg(QDialog):
         # self.connect(self.btngroup, SIGNAL("buttonClicked(int)"), lambda:self.btns_click())
 
     def myslot(self, text):  
-        # print(text)
+        # print(text, self.dict_choices)
         self.g_curbtn = text
         if self.g_curbtn not in self.dict_choices:
             self.btnSysMenu.setFocus()
@@ -214,13 +218,17 @@ class QuestionDlg(QDialog):
         query = QSqlQuery(self.db)
         # cur = conn.cursor()
         today = datetime.date.today()
-        self.g_curbtn = str(btnid).zfill(4)
+        self.g_curbtn = str(btnid).zfill(2)
         if self.g_curbtn not in self.dict_choices:
             self.btngroup.button(int(self.g_curbtn)).setStyleSheet(stylesheetstr_new)
             query.exec_("select count(*) from tmprecord where stusn='" + str(self.g_curbtn) + "'")
             query.next()            
-            if query.value(0) == 0:                
-                query.exec_("insert into tmprecord values (None, " + curclassname + "," + self.g_curbtn + "," + today + ")")
+            if query.value(0) == 0:
+                query.prepare("insert into tmprecord (classname, stusn, datequestion) values (:classname, :stusn, :datequestion)")
+                query.bindValue(":classname", curclassname)
+                query.bindValue(":stusn", self.g_curbtn)
+                query.bindValue(":datequestion", today)
+                query.exec_() 
                 
             self.dict_choices[self.g_curbtn] = "111"
         else:
@@ -230,8 +238,7 @@ class QuestionDlg(QDialog):
             self.dict_choices.pop(self.g_curbtn)
 
         self.btnSysMenu.setFocus()
-        cur.close()
-
+        
     def initStudent(self):
         query = QSqlQuery(self.db)
         ret = query.exec_("update student set wrongquestions=0") 
@@ -241,8 +248,9 @@ class QuestionDlg(QDialog):
 
     def deleteTmpdata(self):
         query = QSqlQuery(self.db)
-        ret = query.exec_("delete from tmprecord where 1=1" )        
-        QMessageBox.information(None, "提示", "已清除本次软件启动后的所有已提问过的学生。")
+        ret = query.exec_("delete from tmprecord where 1=1" )   
+        if self.g_curClassName != "":     
+            QMessageBox.information(None, "提示", "已清除本次软件启动后的所有已提问过的学生。")
   
     def changeTab(self):
         # pass
@@ -295,6 +303,7 @@ class QuestionDlg(QDialog):
         self.group_animation = groupAnimation(self.studentSnlst, self.btngroup)
 
     def mousePressEvent(self, event):
+        # print('a')
         if event.button() == Qt.RightButton:
             QDialog.mousePressEvent(self,event)
             return
@@ -425,6 +434,17 @@ class QuestionDlg(QDialog):
         self.StudentModel.setTable("student")
         # self.StudentModel.setRelation(2, QSqlRelation("mentalmodel", "id", "name"));
         self.StudentModel.setEditStrategy(QSqlTableModel.OnManualSubmit)
+        # self.StudentModel.select()
+
+        query = QSqlQuery(self.db)
+        strwhere = " 1=1 "
+        if self.g_curClassName == "":
+            ret = query.exec_("select classname from classtable")
+            query.next()
+            firstClassName = query.value(0)
+            strwhere += " and classname like '" + firstClassName + "'"
+            
+        self.StudentModel.setFilter(strwhere)
         self.StudentModel.select()
 
         for indx, iheader in enumerate(["班级名称", "学生编号", "学生姓名", "答对次数", "答错次数"]):
@@ -594,21 +614,24 @@ class QuestionDlg(QDialog):
         self.w1.setStyleSheet("background-color: QLinearGradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffffff, stop: 1 #228888);")
          
     def startChoice(self, usernum="", oldbtn=""): 
+        # print(oldbtn, 1)
+
         if oldbtn != "":
-            flag = str(int(oldbtn[:2]))
+            flag = str(oldbtn)            
         else:
+
             self.dict_choices = {}
-       
 
         strwhere = " and classname like '" + self.g_curClassName + "'"
 
         allstudent = []
-        lstrecord = ['0000', '1111']
+        lstrecord = []
         query = QSqlQuery(self.db)        
         query.exec_("select stusn from tmprecord where 1=1 " + strwhere) 
         while(query.next()):
             lstrecord.append(query.value(0))
-        # print(lstrecord, 'record', "select stusn from student where stusn like '03%' and stusn not in " + str(tuple(lstrecord)))
+        # print(lstrecord, 'record', "select stusn from student where stusn not in " + str(tuple(lstrecord)))
+
         query.exec_("select stusn from student where stusn not in " + str(tuple(lstrecord)) + strwhere)
         while(query.next()):
             allstudent.append(query.value(0))
@@ -644,7 +667,7 @@ class QuestionDlg(QDialog):
     def stopmovie(self):
         self.group_animation.stop()
         for isn in self.studentSnlst:
-            print(isn)
+            # print(isn)
             self.btngroup.button(int(isn[0])).setStyleSheet(stylesheetstr_old)
             self.btngroup.button(int(isn[0])).setIcon(QIcon())
         
@@ -655,10 +678,13 @@ class QuestionDlg(QDialog):
             self.btngroup.button(int(ibtn)).setStyleSheet(stylesheetstr_new)
             query.exec_("select count(*) from tmprecord where stusn='" + str(ibtn) + "'")
             query.next()
-            if query.value(0) == 0:
-                strsql = "insert into tmprecord values (?, ?, ?, ?)"
-                query.exec_("insert into tmprecord values (None," + classname + "," + ibtn + "," + today + ")")
-                
+            if query.value(0) == 0:               
+                query.prepare("insert into tmprecord (classname, stusn, datequestion) values (:classname, :stusn, :datequestion)")
+                query.bindValue(":classname", classname)
+                query.bindValue(":stusn", ibtn)
+                query.bindValue(":datequestion", today)
+                query.exec_()
+    
     def answerRight(self):
         # print(self.g_curbtn)
         value = self.g_curbtn
@@ -697,8 +723,7 @@ class QuestionDlg(QDialog):
         query.next()
         studentWrongQuestions = query.value(0) + 1
         query.exec_("update student set wrongquestions=" + str(studentWrongQuestions) + " where stusn='" + value + "'")
-        conn.commit()
-
+        
         if self.dict_choices[value] == "011":
             query.exec_("select rightquestions from student where stusn='" + value + "'")
             query.next()
