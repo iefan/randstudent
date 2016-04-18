@@ -1,12 +1,47 @@
 from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
 from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QLabel, QDesktopWidget
-from PyQt4.QtGui import QTableView, QDialogButtonBox, QMessageBox, QAbstractItemView
+from PyQt4.QtGui import QTableView, QDialogButtonBox, QMessageBox, QAbstractItemView, QItemDelegate
 from PyQt4.QtCore import SIGNAL, Qt, QSize, QTimer,  pyqtProperty, QParallelAnimationGroup, QPropertyAnimation, QEasingCurve, QPyNullVariant
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery, QSqlTableModel, QSqlRelationalTableModel, QSqlRelation
 import random, datetime
 import sqlite3
 # import ui_10_1,ui_10_2,ui_10_3
 # import sys
+
+class ComboBoxDelegate(QItemDelegate):
+    def __init__(self, parent, itemslist=["a", "b", "c"]):
+        QItemDelegate.__init__(self, parent)
+        # itemslist = ["a", "b", "c"]
+        self.itemslist = itemslist
+        self.parent = parent
+
+    def createEditor(self, parent, option, index):
+        self.editor = QComboBox(parent)
+        self.editor.addItems(self.itemslist)
+        self.editor.setCurrentIndex(0)
+        self.editor.installEventFilter(self)    
+        # self.connect(self.editor, SIGNAL("currentIndexChanged(int)"), self.editorChanged)
+
+        return self.editor
+
+    def setEditorData(self, editor, index): 
+        curtxt = index.data(Qt.DisplayRole)
+        # print(type(curtxt)== QPyNullVariant )
+        if type(curtxt) == type(1):
+            curindx = int(index.data(Qt.DisplayRole))
+            curtxt = self.itemslist[curindx]
+        elif type(curtxt)== QPyNullVariant:
+            curtxt = ""
+        pos = self.editor.findText(curtxt)
+        if pos == -1:  
+            pos = 0
+        self.editor.setCurrentIndex(pos)
+
+
+    def setModelData(self,editor,model,index):
+        curindx = self.editor.currentIndex()
+        text = self.itemslist[curindx]
+        model.setData(index, text)
 
 g_cols = 8   
 
@@ -356,17 +391,37 @@ class QuestionDlg(QDialog):
 
     def removeClass(self):
         index = self.ClassnameView.currentIndex()
-        row = index.row()             
-        if QMessageBox.question(self, "删除确认", "是否要删除当前选中记录？", "确定", "取消") == 0:
+        row = index.row()   
+        curClassname =  index.sibling(index.row(),1).data()
+        strwhere = "classname like '" + curClassname + "'"
+        self.StudentModel.setFilter(strwhere)
+        self.StudentModel.select()
+        # print(self.StudentModel.rowCount(), "----", )
+        if QMessageBox.question(self, "删除确认", "删除班级意味着会删除本班所有人员信息。是否要删除当前选中记录？", "确定", "取消") == 0:
             self.ClassnameModel.removeRows(row, 1)
             self.ClassnameModel.submitAll()
             self.ClassnameModel.database().commit()
+
+            self.StudentModel.removeRows(0, self.StudentModel.rowCount())
+            self.StudentModel.submitAll()
+            self.StudentModel.database().commit()
 
     def revertClass(self):
         self.ClassnameModel.revertAll()
         self.ClassnameModel.database().rollback()
 
     def saveClass(self):
+        query = QSqlQuery(self.db)
+
+        # record the old class name
+        lstOldClassName = {}
+        lstOldClassid = []
+        query.exec_("select classid, classname from classtable" )        
+        while(query.next()):
+            lstOldClassName[query.value(0)] = query.value(1)
+            lstOldClassid.append(query.value(0))
+        # print(lstOldClassName)
+
         self.ClassnameModel.database().transaction()
         if self.ClassnameModel.submitAll():
             self.ClassnameModel.database().commit()
@@ -374,6 +429,32 @@ class QuestionDlg(QDialog):
         else:
             self.ClassnameModel.revertAll()
             self.ClassnameModel.database().rollback()
+
+        # print(lstOldClassid)
+
+        lstNewClassName = {}
+        query.exec_("select classid, classname from classtable where classid in " + str(tuple(lstOldClassid)) )        
+        while(query.next()):
+            lstNewClassName[query.value(0)] = query.value(1)            
+
+        # print(lstOldClassName, '=========')
+        # print(lstNewClassName, '~~~~~~~~~')
+
+        for i in lstOldClassName:
+            oldclassname = lstOldClassName[i]
+            newclassname = lstNewClassName[i]
+            if oldclassname != newclassname:
+                # print(oldclassname, newclassname, '++++++++')
+                # print("update student set classname=" + newclassname + " where classname='" + oldclassname + "'")
+                query.exec_("update student set classname='" + newclassname + "' where classname='" + oldclassname + "'")
+                self.StudentModel.setFilter("classname = '" + newclassname + "'")
+                self.StudentModel.select()
+
+        lstClassName = []      
+        query.exec_("select classname from classtable" ) 
+        while(query.next()):
+            lstClassName.append(query.value(0))
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName))
 
     def dbclick(self, indx):
         if type(indx.sibling(indx.row(),0).data()) != QPyNullVariant:
@@ -385,7 +466,8 @@ class QuestionDlg(QDialog):
             
             self.g_curClassName = classname
             self.tabWidget.setTabText(0, self.g_curClassName)
-       
+
+
     def genTwoTab(self, tabtitle=""):
         # Create the tab title sytle.
         tabtitle = QLabel()
@@ -425,6 +507,7 @@ class QuestionDlg(QDialog):
                     "QTableView::item:hover {background-color: rgba(100,200,220,100);} ") 
         self.ClassnameView.setStyleSheet("font-size:16px; ");
         self.ClassnameView.setSelectionMode(QAbstractItemView.SingleSelection)
+        # self.ClassnameView.dataChanged.connect(self.dataChanged)
 
         # self.ClassnameView.setSizePolicy(QSizePolicy.Expanding,     QSizePolicy.Expanding)
 
@@ -452,6 +535,14 @@ class QuestionDlg(QDialog):
     
         self.StudentView.setModel(self.StudentModel)
         self.StudentView.setColumnHidden(0, True)
+
+        # query = QSqlQuery(self.db)  
+        lstClassName = []      
+        query.exec_("select classname from classtable" ) 
+        while(query.next()):
+            lstClassName.append(query.value(0))
+
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName))
         # self.StudentView.show()
         self.StudentView.verticalHeader().setFixedWidth(30)
         self.StudentView.verticalHeader().setStyleSheet("color: red;font-size:20px; background-color: rgb(250, 250, 200, 100)");
@@ -616,10 +707,7 @@ class QuestionDlg(QDialog):
     def startChoice(self, usernum="", oldbtn=""): 
         # print(oldbtn, 1)
 
-        if oldbtn != "":
-            flag = str(oldbtn)            
-        else:
-
+        if oldbtn == "":
             self.dict_choices = {}
 
         strwhere = " and classname like '" + self.g_curClassName + "'"
