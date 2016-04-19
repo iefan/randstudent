@@ -392,7 +392,7 @@ class QuestionDlg(QDialog):
     def removeClass(self):
         index = self.ClassnameView.currentIndex()
         row = index.row()   
-        curClassname =  index.sibling(index.row(),1).data()
+        curClassname =  index.sibling(index.row(),0).data()
         strwhere = "classname like '" + curClassname + "'"
         self.StudentModel.setFilter(strwhere)
         self.StudentModel.select()
@@ -416,24 +416,34 @@ class QuestionDlg(QDialog):
         # record the old class name
         lstOldClassName = {}
         lstOldClassid = []
-        query.exec_("select classid, classname from classtable" )        
+        query.exec_("select rowid, classname from classtable" )        
         while(query.next()):
             lstOldClassName[query.value(0)] = query.value(1)
             lstOldClassid.append(query.value(0))
         # print(lstOldClassName)
 
+        # print(lstOldClassName)
+
+        # index = self.ClassnameView.currentIndex()
+        # row = index.row()   
+        # curClassname =  index.sibling(index.row(),1).data()
+        # print(curClassname, '---------------------------------')
+        # return
+
+        # Update the class Table
         self.ClassnameModel.database().transaction()
         if self.ClassnameModel.submitAll():
             self.ClassnameModel.database().commit()
             # print("save success!  ->commit")
         else:
+            QMessageBox.warning(None, "错误",  "请检查班级中名称，不能出现同名班级！")
             self.ClassnameModel.revertAll()
             self.ClassnameModel.database().rollback()
 
         # print(lstOldClassid)
 
         lstNewClassName = {}
-        query.exec_("select classid, classname from classtable where classid in " + str(tuple(lstOldClassid)) )        
+        query.exec_("select rowid, classname from classtable where rowid in " + str(tuple(lstOldClassid)) )        
         while(query.next()):
             lstNewClassName[query.value(0)] = query.value(1)            
 
@@ -458,7 +468,7 @@ class QuestionDlg(QDialog):
 
     def dbclick(self, indx):
         if type(indx.sibling(indx.row(),0).data()) != QPyNullVariant:
-            classname = indx.sibling(indx.row(),1).data()
+            classname = indx.sibling(indx.row(),0).data()
             
             strwhere = "classname like '" + classname + "'"
             self.StudentModel.setFilter(strwhere)
@@ -492,13 +502,13 @@ class QuestionDlg(QDialog):
         self.ClassnameModel.setEditStrategy(QSqlTableModel.OnManualSubmit)
         self.ClassnameModel.select()
 
-        self.ClassnameModel.setHeaderData(1, Qt.Horizontal, "班级名称")
+        self.ClassnameModel.setHeaderData(0, Qt.Horizontal, "班级名称")
 
         # for indx, iheader in enumerate(["classid", "classname"]):
         #     self.ClassnameModel.setHeaderData(indx+1, Qt.Horizontal, iheader)
     
         self.ClassnameView.setModel(self.ClassnameModel)
-        self.ClassnameView.setColumnHidden(0, True)
+        # self.ClassnameView.setColumnHidden(0, True)
         # self.ClassnameView.show()
         self.ClassnameView.verticalHeader().setFixedWidth(30)
         self.ClassnameView.verticalHeader().setStyleSheet("color: red;font-size:20px; ");
@@ -847,6 +857,7 @@ class QuestionDlg(QDialog):
         # self.choiceOneStudent(value)
 
     def createDb(self):
+        conn = sqlite3.connect("studentNew.db") 
         cur = conn.cursor()
         sqlstr = 'create table student (id integer primary key, \
             classname varchar(20), \
@@ -862,8 +873,7 @@ class QuestionDlg(QDialog):
             stusn varchar(20), \
             datequestion date)'
 
-        sqlstr3 = 'create table classtable (classid integer primary key, \
-            classname varchar(20))'
+        sqlstr3 = 'create table classtable (classname varchar(20) PRIMARY KEY)'
         
         cur.execute(sqlstr3)
         conn.commit()
@@ -886,10 +896,10 @@ class QuestionDlg(QDialog):
         # conn.commit()
 
         # insert example data
-        strsql = "insert into classtable values (?, ?)"
-        cur.execute(strsql, (None, "三（3）班"))
+        strsql = "insert into classtable values (?)"
+        cur.execute(strsql, ("三（3）班",))
         conn.commit()
-        cur.execute(strsql, (None, "三（4）班"))
+        cur.execute(strsql, ("三（4）班",))
         conn.commit()
 
 
