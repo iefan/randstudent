@@ -1,7 +1,7 @@
 from PyQt4.QtGui import QDialog, QIcon, QFont, QMenu, QColor, QComboBox, QLayout, QApplication, QTabWidget, QButtonGroup, QWidget, QPushButton, QStandardItem
 from PyQt4.QtGui import QHBoxLayout, QVBoxLayout, QGridLayout, QSizePolicy, QLabel, QDesktopWidget
 from PyQt4.QtGui import QTableView, QDialogButtonBox, QMessageBox, QAbstractItemView, QItemDelegate
-from PyQt4.QtCore import SIGNAL, Qt, QSize, QTimer,  pyqtProperty, QParallelAnimationGroup, QPropertyAnimation, QEasingCurve, QPyNullVariant
+from PyQt4.QtCore import SIGNAL, Qt, QSize, QTimer,  pyqtProperty, QParallelAnimationGroup, QPropertyAnimation, QEasingCurve, QPyNullVariant, QDir
 from PyQt4.QtSql import QSqlDatabase, QSqlQuery, QSqlTableModel, QSqlRelationalTableModel, QSqlRelation
 import random, datetime
 import sqlite3
@@ -182,12 +182,19 @@ class QuestionDlg(QDialog):
         self.btnSysMenu.clicked.connect(lambda: self.showMinimized())
         menufont = QFont("宋体", 10)
         popMenu = QMenu(self)
-        entry1 = popMenu.addAction("初始化")
+        entry1 = popMenu.addAction("所有学生提问信息清零")
         entry1.setFont(menufont)
         self.connect(entry1,SIGNAL('triggered()'), self.initStudent)
-        entry2 = popMenu.addAction("清除提问人员")
+        entry2 = popMenu.addAction("清除本堂课提问人员")
         entry2.setFont(menufont)
         self.connect(entry2,SIGNAL('triggered()'), self.deleteTmpdata)
+        entry3 = popMenu.addAction("关于...")
+        entry3.setFont(menufont)
+        self.connect(entry3,SIGNAL('triggered()'), self.aboutMe)
+        entry4 = popMenu.addAction("导出...")
+        entry4.setFont(menufont)
+        self.connect(entry4,SIGNAL('triggered()'), self.exportNotice)
+
         self.btnSysMenu.setMenu(popMenu)
         self.btnSysMenu.setStyleSheet("QPushButton::menu-indicator {image: url('image/sysmenu.png');subcontrol-position: right center;} ")
         # self.btnSysMenu.setStyleSheet("background-color:rgb(0,100,0); color:rgb(255,255,255);")
@@ -273,6 +280,69 @@ class QuestionDlg(QDialog):
             self.dict_choices.pop(self.g_curbtn)
 
         self.btnSysMenu.setFocus()
+
+    def exportNotice(self):
+        query = QSqlQuery(self.db)
+        query.exec_("select stusn, stuname, classname, rightquestions, wrongquestions from student" ) 
+        lstInfo = [["学号","姓名", "班级", "回答正确次数", "回答错误次数"]]
+        while(query.next()):
+            lstInfo.append([query.value(0),query.value(1),query.value(2),query.value(3),query.value(4)])
+
+        from xlwt import Workbook,easyxf
+        book = Workbook(encoding='ascii')
+            # 'pattern: pattern solid,  fore_colour white;'
+        style = easyxf(
+            'font: height 280, name 黑体;'
+            'align: vertical center, horizontal center;'
+            )
+        style2 = easyxf('font: height 260, name 仿宋_GB2312, bold True; align: vertical center, horizontal left;')
+        style3 = easyxf('font: height 260, name 仿宋_GB2312, bold True; align: vertical center, horizontal left, wrap True;')
+
+        sheet1 = book.add_sheet('学生提问情况汇总',cell_overwrite_ok=True)
+        # sheet1.write(0,7,flagtxt, easyxf('font: height 200, name 黑体;align: vertical center, horizontal right;'))
+        sheet1.write_merge(0,0,0,4, '学生提问情况汇总表',style)
+        sheet1.row(0).height_mismatch = 1
+        sheet1.row(0).height = 5*256
+
+        sheet1.col(0).width = 10*256
+        sheet1.col(1).width = 25*256
+        sheet1.col(2).width = 25*256
+        sheet1.col(3).width = 20*256
+        sheet1.col(4).width = 20*256
+        
+        tmprows = 1
+        for item in lstInfo:
+            stusn               = item[0]
+            stuname             = item[1]
+            classname           = item[2]
+            rightquestions      = item[3]
+            wrongquestions      = item[4]
+
+            sheet1.write(tmprows,0,stusn, style2)
+            sheet1.write(tmprows,1,stuname, style2)
+            sheet1.write(tmprows,2,classname, style2)
+            sheet1.write(tmprows,3,rightquestions, style2)
+            sheet1.write(tmprows,4,wrongquestions, style2)
+            tmprows += 1
+        # print(tmprows)
+        sheet1.header_str = "".encode()
+        sheet1.footer_str = "".encode()
+
+        # book.save('d:/simple.xls')
+        # print(QDir.home().dirName() , QDir.homePath ())
+        filename = QDir.homePath () + "\学生提问情况汇总表.xls" 
+        try:
+            book.save(filename)
+        except  Exception as e:
+            QMessageBox.warning(self, "写入错误", "错误号："+str(e.errno)+"\n错误描述："+e.strerror+"\n请关闭已经打开的%s文档!" % filename)
+        QMessageBox.about (self, "导出成功", "请查看文档：%s" % filename)
+
+    def aboutMe(self):
+        strinfo = """本软件采用python3.4编写，界面采用qt4.8的python绑定。
+                    \n版本所有：汕头市大华路第一小学赵小娜老师。
+                    \n有任何问题请反馈至mybsppp@163.com。
+                    """
+        QMessageBox.information(None, "关于", strinfo)
         
     def initStudent(self):
         query = QSqlQuery(self.db)
