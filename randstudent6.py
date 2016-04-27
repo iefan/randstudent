@@ -375,7 +375,7 @@ class QuestionDlg(QDialog):
             
         self.tabWidget.setTabText(0, self.g_curClassName)
         # print(1)
-        strwhere = " and classname like '" + self.g_curClassName + "'"
+        strwhere = " and classname like '" + self.g_curClassName + "' ORDER BY stusn"
 
         self.g_curbtn = ""
         self.dict_choices = {}
@@ -417,6 +417,7 @@ class QuestionDlg(QDialog):
         # print(self.offset)
 
     def mouseMoveEvent(self, event):
+        # print('sss')
         if hasattr(self, 'offset'):
             x=event.globalX()
             y=event.globalY()
@@ -428,10 +429,30 @@ class QuestionDlg(QDialog):
 
     #######======= studentModel ============###############
     def newStudent(self):
+        # Calc the missing number:
         row = self.StudentModel.rowCount()
+
+        if row > 0:
+            oldNumList = []
+            for i in range(0, row):
+                oldNumList.append(int(self.StudentModel.index(i,2).data()))
+            
+            allNumberList = list(range(1, oldNumList[-1]+1))
+            for i in range(0, allNumberList[-1]):
+                if oldNumList[i] != allNumberList[i]:
+                    missingNum = allNumberList[i]
+                    break
+            if len(oldNumList) == len(allNumberList):
+                missingNum = allNumberList[i] +1
+        else:
+            missingNum = 1
+
         self.StudentModel.insertRow(row)
         self.StudentView.scrollToBottom()
         self.StudentModel.setData(self.StudentModel.index(row, 1), self.g_curClassName)
+        self.StudentModel.setData(self.StudentModel.index(row, 2), str(missingNum).zfill(2))
+        self.StudentModel.setData(self.StudentModel.index(row, 4), 0)
+        self.StudentModel.setData(self.StudentModel.index(row, 5), 0)
 
     def removeStudent(self):
         index = self.StudentView.currentIndex()
@@ -492,14 +513,6 @@ class QuestionDlg(QDialog):
             lstOldClassid.append(query.value(0))
         # print(lstOldClassName)
 
-        # print(lstOldClassName)
-
-        # index = self.ClassnameView.currentIndex()
-        # row = index.row()   
-        # curClassname =  index.sibling(index.row(),1).data()
-        # print(curClassname, '---------------------------------')
-        # return
-
         # Update the class Table
         self.ClassnameModel.database().transaction()
         if self.ClassnameModel.submitAll():
@@ -542,11 +555,18 @@ class QuestionDlg(QDialog):
             
             strwhere = "classname like '" + classname + "'"
             self.StudentModel.setFilter(strwhere)
+            self.StudentModel.setSort(2, Qt.AscendingOrder)
             self.StudentModel.select()
             
             self.g_curClassName = classname
             self.tabWidget.setTabText(0, self.g_curClassName)
 
+    def dbclick2(self, indx):
+        if indx.column() == 2:
+            self.StudentView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        else:
+            self.StudentView.setEditTriggers(QAbstractItemView.DoubleClicked)
+        
 
     def genTwoTab(self, tabtitle=""):
         # Create the tab title sytle.
@@ -632,6 +652,7 @@ class QuestionDlg(QDialog):
                     ) 
         self.StudentView.setStyleSheet("font-size:16px;")
         self.StudentView.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.StudentView.doubleClicked.connect(self.dbclick2)
 
         btn_lst1_layout = QGridLayout()
         newusrbtn       = QPushButton("新增")
