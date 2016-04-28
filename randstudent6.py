@@ -9,13 +9,12 @@ import sqlite3
 # import sys
 
 class ComboBoxDelegate(QItemDelegate):
-    def __init__(self, parent, itemslist=["a", "b", "c"], db="", oldclassname=""):
+    def __init__(self, parent, itemslist=["a", "b", "c"], db=""):
         QItemDelegate.__init__(self, parent)
         # itemslist = ["a", "b", "c"]
         self.itemslist = itemslist
         self.parent = parent
         self.db = db
-        self.oldclassname = oldclassname
         
     def createEditor(self, parent, option, index):
         self.editor = QComboBox(parent)
@@ -28,6 +27,7 @@ class ComboBoxDelegate(QItemDelegate):
 
     def setEditorData(self, editor, index): 
         curtxt = index.data(Qt.DisplayRole)
+        # print(curtxt, "curtxt:---")
         # print(type(curtxt)== QPyNullVariant )
         if type(curtxt) == type(1):
             curindx = int(index.data(Qt.DisplayRole))
@@ -47,16 +47,28 @@ class ComboBoxDelegate(QItemDelegate):
 
         # update the student sn
         newClassname    = index.sibling(index.row(),1).data()
-        query = QSqlQuery(self.db)        
-        ret = query.exec_("select max(stusn) from student where classname = '" + newClassname + "'")
-        query.next()
-        tmpsn = query.value(0)
-        if type(tmpsn)== QPyNullVariant:
-            newstusn = "01"
-        else:
-            newstusn = str(int(query.value(0)) + 1).zfill(2)
-        if newClassname != self.oldclassname:
+        stusn           = index.sibling(index.row(),2).data()
+        stuname         = index.sibling(index.row(),3).data()
+
+        query = QSqlQuery(self.db)  
+        strsql = "select count(*), stusn from student where classname='" + newClassname + "' and stuname='" + stuname + "'"
+        query.exec_(strsql)
+        query.next()        
+
+        if query.value(0) == 0: ## the student is not in this class
+            # print(query.value(0), "count**", strsql)
+            ret = query.exec_("select max(stusn) from student where classname = '" + newClassname + "'")
+            query.next()
+            tmpsn = query.value(0)
+            if type(tmpsn)== QPyNullVariant:
+                newstusn = "01"
+            else:
+                newstusn = str(int(query.value(0)) + 1).zfill(2)
+
+        # if newClassname != self.oldclassname:
             model.setData(index.sibling(index.row(), 2), newstusn)
+        else:
+            model.setData(index.sibling(index.row(), 2), query.value(1))
         
         # model.setFilter("")
 
@@ -564,7 +576,7 @@ class QuestionDlg(QDialog):
         query.exec_("select classname from classtable" ) 
         while(query.next()):
             lstClassName.append(query.value(0))
-        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db, newclassname))
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db))
 
     def dbclick(self, indx):
         if type(indx.sibling(indx.row(),0).data()) != QPyNullVariant:
@@ -659,7 +671,7 @@ class QuestionDlg(QDialog):
         while(query.next()):
             lstClassName.append(query.value(0))
 
-        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db, lstClassName[0]))
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db))
         # self.StudentView.show()
         self.StudentView.verticalHeader().setFixedWidth(30)
         self.StudentView.verticalHeader().setStyleSheet("color: red;font-size:20px; background-color: rgb(250, 250, 200, 100)");
