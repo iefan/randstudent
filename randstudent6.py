@@ -9,12 +9,14 @@ import sqlite3
 # import sys
 
 class ComboBoxDelegate(QItemDelegate):
-    def __init__(self, parent, itemslist=["a", "b", "c"]):
+    def __init__(self, parent, itemslist=["a", "b", "c"], db="", oldclassname=""):
         QItemDelegate.__init__(self, parent)
         # itemslist = ["a", "b", "c"]
         self.itemslist = itemslist
         self.parent = parent
-
+        self.db = db
+        self.oldclassname = oldclassname
+        
     def createEditor(self, parent, option, index):
         self.editor = QComboBox(parent)
         self.editor.addItems(self.itemslist)
@@ -42,6 +44,21 @@ class ComboBoxDelegate(QItemDelegate):
         curindx = self.editor.currentIndex()
         text = self.itemslist[curindx]
         model.setData(index, text)
+
+        # update the student sn
+        newClassname    = index.sibling(index.row(),1).data()
+        query = QSqlQuery(self.db)        
+        ret = query.exec_("select max(stusn) from student where classname = '" + newClassname + "'")
+        query.next()
+        tmpsn = query.value(0)
+        if type(tmpsn)== QPyNullVariant:
+            newstusn = "01"
+        else:
+            newstusn = str(int(query.value(0)) + 1).zfill(2)
+        if newClassname != self.oldclassname:
+            model.setData(index.sibling(index.row(), 2), newstusn)
+        
+        # model.setFilter("")
 
 g_cols = 8   
 
@@ -547,7 +564,7 @@ class QuestionDlg(QDialog):
         query.exec_("select classname from classtable" ) 
         while(query.next()):
             lstClassName.append(query.value(0))
-        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName))
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db, newclassname))
 
     def dbclick(self, indx):
         if type(indx.sibling(indx.row(),0).data()) != QPyNullVariant:
@@ -642,7 +659,7 @@ class QuestionDlg(QDialog):
         while(query.next()):
             lstClassName.append(query.value(0))
 
-        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName))
+        self.StudentView.setItemDelegateForColumn(1,  ComboBoxDelegate(self, lstClassName, self.db, lstClassName[0]))
         # self.StudentView.show()
         self.StudentView.verticalHeader().setFixedWidth(30)
         self.StudentView.verticalHeader().setStyleSheet("color: red;font-size:20px; background-color: rgb(250, 250, 200, 100)");
